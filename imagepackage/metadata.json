@@ -1,0 +1,23 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "qydwhotmail@gmail.com",
+                "Name": "Fushan Wen"
+            }
+        ],
+        "Category": "",
+        "Description": "Wallpaper plugin with xml format support",
+        "Description[zh_CN]": "支持XML格式的壁纸插件",
+        "Description[zh_TW]": "支持XML格式的壁纸插件",
+        "Icon": "preferences-desktop-wallpaper",
+        "Id": "com.github.easyteacher.plasma.wallpapers.xml",
+        "License": "GPLv2+",
+        "Name": "XML Wallpaper",
+        "Name[zh_CN]": "XML 壁纸",
+        "Name[zh_TW]": "XML 桌布",
+        "Website": "https://github.com/easyteacher/plasma-wallpapers-xml"
+    },
+    "X-KDE-ParentApp": "org.kde.plasmashell",
+    "X-KDE-ServiceTypes": "Plasma/Wallpaper"
+}

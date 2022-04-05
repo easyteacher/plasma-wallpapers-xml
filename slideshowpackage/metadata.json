@@ -1,0 +1,29 @@
+{
+    "KPlugin": {
+        "Category": "",
+        "Description": "Slideshow wallpaper",
+        "Description[zh_CN]": "幻灯片壁纸",
+        "Icon": "folder-image",
+        "Id": "com.github.easyteacher.plasma.wallpapers.xml.slideshow",
+        "License": "GPLv2+",
+        "MimeTypes": [
+            "image/jpeg",
+            "image/png",
+            "image/svg+xml",
+            "image/svg+xml-compressed",
+            "image/bmp",
+            "image/webp",
+            "image/tiff"
+        ],
+        "Name": "XML Slideshow",
+        "Name[zh_CN]": "XML 幻灯片",
+        "Name[zh_TW]": "XML 投影播放",
+        "ServiceTypes": [
+            "Plasma/Wallpaper"
+        ],
+        "Website": "https://kde.org/plasma-desktop"
+    },
+    "Keywords": "",
+    "MimeType": "image/jpeg;image/png;image/svg+xml;image/svg+xml-compressed;image/bmp;image/webp;image/tiff;",
+    "X-KDE-ParentApp": "org.kde.plasmashell"
+}
