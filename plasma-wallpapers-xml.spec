@@ -6,7 +6,7 @@
 
 
 Name:           plasma-wallpapers-xml
-Version:        0.1.0
+Version:        0.2.0
 Release:        1%{?dist}
 Summary:        A wallpaper plugin for KDE Plasma
 License:        GPLv2+
@@ -17,6 +17,7 @@ BuildRequires:  cmake(KF5Config)
 BuildRequires:  cmake(KF5Declarative)
 BuildRequires:  cmake(KF5I18n)
 BuildRequires:  cmake(KF5KIO)
+BuildRequires:  cmake(KF5Notifications)
 BuildRequires:  cmake(KF5Package)
 BuildRequires:  cmake(KF5Plasma)
 BuildRequires:  cmake(KF5Solid)
