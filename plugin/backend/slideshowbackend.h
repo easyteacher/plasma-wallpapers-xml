@@ -1,8 +1,16 @@
 /*
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
+    SPDX-FileCopyrightText: 2007 Aaron Seigo <aseigo@kde.org>
+    SPDX-FileCopyrightText: 2008 Petri Damsten <damu@iki.fi>
+    SPDX-FileCopyrightText: 2008 Alexis Ménard <darktears31@gmail.com>
+    SPDX-FileCopyrightText: 2014 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2015 Kai Uwe Broulik <kde@privat.broulik.de>
+    SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
     SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
+
 
 #ifndef SLIDESHOWBACKEND_H
 #define SLIDESHOWBACKEND_H
@@ -72,7 +80,6 @@ private Q_SLOTS:
     void slotDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
 
 private:
-
     SlideModel *m_slideshowModel = nullptr;
     SlideFilterModel *m_slideFilterModel = nullptr;
 
