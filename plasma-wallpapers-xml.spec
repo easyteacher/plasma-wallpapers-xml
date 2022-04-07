@@ -6,7 +6,7 @@
 
 
 Name:           plasma-wallpapers-xml
-Version:        0.2.0
+Version:        1.0.0
 Release:        1%{?dist}
 Summary:        A wallpaper plugin for KDE Plasma
 License:        GPLv2+
@@ -59,8 +59,7 @@ A image wallpaper plugin for KDE Plasma that supports GNOME XML wallpaper format
 %{_datadir}/kservices5/plasma-wallpaper-com.github.easyteacher.plasma.wallpapers.xml.slideshow.desktop
 
 %dir %{_libdir}/qt5/qml/com/github/easyteacher/plasma/wallpapers/xml
-%{_libdir}/qt5/qml/com/github/easyteacher/plasma/wallpapers/xml/libplasma_xml_wallpaper.so
-%{_libdir}/qt5/qml/com/github/easyteacher/plasma/wallpapers/xml/qmldir
+%{_libdir}/qt5/qml/com/github/easyteacher/plasma/wallpapers/xml/
 
 %changelog
 

@@ -36,6 +36,6 @@ Item {
         icon.name: "internet-web-browser"
         text: i18nc("@action:button", "Go to README.md")
 
-        onClicked: Qt.openUrlExternally("https://github.com/easyteacher/plasma-wallpapers-xml/tree/develop/README.md")
+        onClicked: Qt.openUrlExternally("https://github.com/easyteacher/plasma-wallpapers-xml/tree/main/README.md")
     }
 }
