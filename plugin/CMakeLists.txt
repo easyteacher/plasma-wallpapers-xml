@@ -3,21 +3,21 @@ set(image_SRCS
     backend/imagebackend.cpp
     backend/slideshowbackend.cpp
     backend/xmlslideshowupdatetimer.cpp
-    backend/finder/imagefinder.cpp
-    backend/finder/xmlfinder.cpp
-    backend/finder/packagefinder.cpp
-    backend/finder/imagesizefinder.cpp
-    backend/model/abstractimagelistmodel.cpp
-    backend/model/imagelistmodel.cpp
-    backend/model/packagelistmodel.cpp
-    backend/model/xmlimagelistmodel.cpp
-    backend/model/xmlpreviewgenerator.cpp
-    backend/model/imageproxymodel.cpp
-    backend/model/slidemodel.cpp
-    backend/model/slidefiltermodel.cpp
-    backend/model/sortingmode.h
-    backend/provider/xmlimageprovider.cpp
-    backend/provider/packageimageprovider.cpp
+    finder/imagefinder.cpp
+    finder/xmlfinder.cpp
+    finder/packagefinder.cpp
+    finder/imagesizefinder.cpp
+    model/abstractimagelistmodel.cpp
+    model/imagelistmodel.cpp
+    model/packagelistmodel.cpp
+    model/xmlimagelistmodel.cpp
+    model/xmlpreviewgenerator.cpp
+    model/imageproxymodel.cpp
+    model/slidemodel.cpp
+    model/slidefiltermodel.cpp
+    model/sortingmode.h
+    provider/xmlimageprovider.cpp
+    provider/packageimageprovider.cpp
 )
 
 ecm_qt_declare_logging_category(image_SRCS HEADER debug.h
