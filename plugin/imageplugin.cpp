@@ -10,11 +10,11 @@
 
 #include "backend/imagebackend.h"
 #include "backend/slideshowbackend.h"
-#include "backend/model/sortingmode.h"
-#include "backend/model/imageproxymodel.h"
-#include "backend/model/slidefiltermodel.h"
-#include "backend/provider/xmlimageprovider.h"
-#include "backend/provider/packageimageprovider.h"
+#include "model/sortingmode.h"
+#include "model/imageproxymodel.h"
+#include "model/slidefiltermodel.h"
+#include "provider/xmlimageprovider.h"
+#include "provider/packageimageprovider.h"
 
 void ImagePlugin::initializeEngine(QQmlEngine *engine, const char *uri)
 {
