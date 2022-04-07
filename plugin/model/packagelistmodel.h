@@ -21,8 +21,8 @@ class PackageListModel : public AbstractImageListModel
 public:
     explicit PackageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent = nullptr);
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex& index, int role) const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
     /**

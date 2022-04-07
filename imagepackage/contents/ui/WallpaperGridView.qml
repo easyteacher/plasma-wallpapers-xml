@@ -19,6 +19,8 @@ DropArea {
 
         anchors.fill: parent
 
+        view.model: root.imageModel
+
         function resetCurrentIndex() {
             //that min is needed as the module will be populated in an async way
             //and only on demand so we can't ensure it already exists
@@ -27,7 +29,6 @@ DropArea {
 
         //kill the space for label under thumbnails
         Component.onCompleted: {
-            view.model = root.imageModel;
             resetCurrentIndex();
         }
 
@@ -45,8 +46,8 @@ DropArea {
         width: parent.width - (Kirigami.Units.largeSpacing * 4)
         visible: wallpapersGrid.view.count === 0
 
-        icon.name: wallpapersGrid.view.model ? "image-loading-symbolic" : "edit-none"
-        text: wallpapersGrid.view.model ? i18n("Loading") : i18n("No wallpapers")
+        icon.name: !root.imageModel.loading ? "edit-none" : "image-loading-symbolic"
+        text: !root.imageModel.loading ? i18n("No wallpapers") : i18n("Loading")
     }
 
     onEntered: {

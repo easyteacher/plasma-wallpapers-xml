@@ -6,7 +6,8 @@
 
 #include "imageproxymodel.h"
 
-#include <QFileInfo>
+#include <QDir>
+#include <QUrlQuery>
 
 #include <KConfigGroup>
 #include <KIO/OpenFileManagerWindowJob>
@@ -22,12 +23,16 @@ ImageProxyModel::ImageProxyModel(const QStringList &customPaths, const QSize &ta
     , m_packageModel(new PackageListModel(customPaths, targetSize, this))
     , m_xmlModel(new XmlImageListModel(customPaths, targetSize, this))
 {
+    connect(this, &ImageProxyModel::rowsInserted, this, &ImageProxyModel::countChanged);
+    connect(this, &ImageProxyModel::rowsRemoved, this, &ImageProxyModel::countChanged);
+    connect(this, &ImageProxyModel::modelReset, this, &ImageProxyModel::countChanged);
+
     connect(m_imageModel, &AbstractImageListModel::loaded, this, &ImageProxyModel::slotHandleLoaded);
     connect(m_packageModel, &AbstractImageListModel::loaded, this, &ImageProxyModel::slotHandleLoaded);
     connect(m_xmlModel, &AbstractImageListModel::loaded, this, &ImageProxyModel::slotHandleLoaded);
 }
 
-QHash< int, QByteArray > ImageProxyModel::roleNames() const
+QHash<int, QByteArray> ImageProxyModel::roleNames() const
 {
     const auto models = sourceModels();
 
@@ -60,6 +65,11 @@ int ImageProxyModel::indexOf(const QString &packagePath) const
     return idx;
 }
 
+bool ImageProxyModel::loading() const
+{
+    return m_loaded != 3;
+}
+
 void ImageProxyModel::reload()
 {
     const auto models = sourceModels();
@@ -73,7 +83,7 @@ void ImageProxyModel::reload()
     }
 }
 
-void ImageProxyModel::addBackground(const QString &_path)
+QStringList ImageProxyModel::addBackground(const QString &_path)
 {
     QString path = _path;
 
@@ -86,8 +96,12 @@ void ImageProxyModel::addBackground(const QString &_path)
     QStringList results;
 
     if (info.isDir()) {
+        if (!path.endsWith(QDir::separator())) {
+            path += QDir::separator();
+        }
+
         results = m_packageModel->addBackground(path);
-    } else {
+    } else if (info.isFile()) {
         if (info.suffix() == QLatin1String("xml")) {
             results = m_xmlModel->addBackground(path);
         } else {
@@ -98,23 +112,33 @@ void ImageProxyModel::addBackground(const QString &_path)
     if (!results.empty()) {
         m_pendingAddition.append(results);
     }
+
+    return results;
 }
 
-void ImageProxyModel::removeBackground(const QString &path)
+void ImageProxyModel::removeBackground(const QString &_packagePath)
 {
-    const QFileInfo info(path);
+    const QFileInfo info(_packagePath);
+    QString packagePath = _packagePath;
 
     if (info.isDir()) {
-        m_packageModel->removeBackground(path);
+        if (!packagePath.endsWith(QDir::separator())) {
+            packagePath += QDir::separator();
+        }
+
+        m_packageModel->removeBackground(packagePath);
     } else if (info.isFile()) {
-        m_imageModel->removeBackground(path);
+        m_imageModel->removeBackground(packagePath);
     } else {
-        const QUrl url(path);
+        const QUrl url(packagePath);
 
         if (url.scheme() == QLatin1String("image") && url.host() == QLatin1String("gnome-wp-list")) {
-            m_xmlModel->removeBackground(path);
+            m_xmlModel->removeBackground(packagePath);
         }
     }
+
+    // The user may add a wallpaper and delete it later.
+    m_pendingAddition.removeOne(packagePath);
 }
 
 void ImageProxyModel::commitAddition()
@@ -155,8 +179,22 @@ void ImageProxyModel::commitDeletion()
     const QStringList list = cfg.readEntry("usersWallpapers", QStringList{});
     QStringList updatedList;
 
+    // Check if the file still exists
     std::copy_if(list.cbegin(), list.cend(), std::back_inserter(updatedList), [&pendingList](const QString &p) {
-        return !pendingList.contains(p);
+        const QUrl url(p);
+
+        if (url.scheme() == QLatin1String("image") && url.host() == QLatin1String("gnome-wp-list")) {
+            const QUrlQuery urlQuery(url);
+            const QString filename = urlQuery.queryItemValue(QStringLiteral("filename"));
+
+            if (!QFileInfo(filename).exists()) {
+                return false;
+            }
+        } else if (url.isLocalFile() && !QFileInfo(url.toLocalFile()).exists()) {
+            return false;
+        }
+
+        return !pendingList.contains(p) && QFileInfo(p).exists();
     });
 
     cfg.writeEntry("usersWallpapers", updatedList);
@@ -172,8 +210,11 @@ void ImageProxyModel::slotHandleLoaded(AbstractImageListModel *model)
 {
     disconnect(model, &AbstractImageListModel::loaded, this, 0);
 
-    connect(model, &AbstractImageListModel::countChanged, this, &ImageProxyModel::countChanged);
     connect(this, &ImageProxyModel::targetSizeChanged, model, &AbstractImageListModel::slotTargetSizeChanged);
 
     addSourceModel(model);
+
+    if (++m_loaded == 3) {
+        Q_EMIT loadingChanged();
+    }
 }

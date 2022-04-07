@@ -8,9 +8,9 @@
 
 #include <algorithm>
 
-#include <QFileInfo>
 #include <QDateTime>
 #include <QDir>
+#include <QFileInfo>
 #include <QRandomGenerator>
 #include <QUrl>
 
@@ -25,6 +25,10 @@ SlideFilterModel::SlideFilterModel(QObject *parent)
 {
     srand(time(nullptr));
     setSortCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+
+    connect(this, &SlideFilterModel::rowsInserted, this, &SlideFilterModel::countChanged);
+    connect(this, &SlideFilterModel::rowsRemoved, this, &SlideFilterModel::countChanged);
+    connect(this, &SlideFilterModel::modelReset, this, &SlideFilterModel::countChanged);
 }
 
 QHash<int, QByteArray> SlideFilterModel::roleNames() const
@@ -83,7 +87,13 @@ void SlideFilterModel::setSourceModel(QAbstractItemModel *sourceModel)
 
             QSortFilterProxyModel::invalidate();
         });
+        connect(sourceModel, &QAbstractItemModel::dataChanged, this, &SlideFilterModel::dataChanged);
     }
+}
+
+int SlideFilterModel::count() const
+{
+    return rowCount();
 }
 
 bool SlideFilterModel::lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const

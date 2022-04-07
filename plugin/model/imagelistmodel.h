@@ -25,8 +25,8 @@ public:
     explicit ImageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent = nullptr);
     ~ImageListModel() override = default;
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex& index, int role) const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
     int indexOf(const QString &path) const override;

@@ -1,7 +1,5 @@
 /*
-    SPDX-FileCopyrightText: 2013 Marco Martin <mart@kde.org>
-    SPDX-FileCopyrightText: 2014 Kai Uwe Broulik <kde@privat.broulik.de>
-    SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
+    SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
@@ -51,13 +49,5 @@ Item {
         asynchronous: true
 
         source: "ConfigGeneral.qml"
-    }
-
-    Loader {
-        anchors.fill: parent
-        active: generalLoader.status !== Loader.Ready && generalLoader.status !== Loader.Loading
-        asynchronous: true
-
-        source: "FallbackMessage.qml"
     }
 }

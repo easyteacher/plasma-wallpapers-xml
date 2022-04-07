@@ -10,7 +10,7 @@
 
 #include <KPackage/PackageLoader>
 
-#include "../finder/packagefinder.h"
+#include "finder/packagefinder.h"
 
 class AsyncPackageImageResponseRunnable : public QObject, public QRunnable
 {
@@ -42,7 +42,7 @@ public:
      */
     explicit AsyncPackageImageResponse(const QString &path, const QSize &requestedSize, QThreadPool *pool);
 
-    QQuickTextureFactory* textureFactory() const override;
+    QQuickTextureFactory *textureFactory() const override;
 
 protected Q_SLOTS:
     void slotHandleDone(const QImage &image);
@@ -75,7 +75,7 @@ void AsyncPackageImageResponseRunnable::run()
         return;
     }
 
-    findPreferredImageInPackage(package, m_requestedSize);
+    PackageFinder::findPreferredImageInPackage(package, m_requestedSize);
 
     QImage image(package.filePath("preferred"));
 
@@ -99,7 +99,7 @@ void AsyncPackageImageResponse::slotHandleDone(const QImage &image)
     emit finished();
 }
 
-QQuickTextureFactory* AsyncPackageImageResponse::textureFactory() const
+QQuickTextureFactory *AsyncPackageImageResponse::textureFactory() const
 {
     return QQuickTextureFactory::textureFactoryForImage(m_image);
 }
@@ -108,7 +108,7 @@ PackageImageProvider::PackageImageProvider()
 {
 }
 
-QQuickImageResponse* PackageImageProvider::requestImageResponse(const QString& id, const QSize& requestedSize)
+QQuickImageResponse *PackageImageProvider::requestImageResponse(const QString &id, const QSize &requestedSize)
 {
     AsyncPackageImageResponse *response = new AsyncPackageImageResponse(id, requestedSize, &m_pool);
 

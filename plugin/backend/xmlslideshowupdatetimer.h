@@ -10,6 +10,8 @@
 #include <QDateTime>
 #include <QTimer>
 
+class SlideshowData;
+
 /**
  * @todo write docs
  */
@@ -21,6 +23,9 @@ public:
     XmlSlideshowUpdateTimer(QObject *parent = nullptr);
 
     void adjustInterval(const QString &xmlpath);
+
+    static QDateTime slideshowStartTime(const SlideshowData &sData);
+    static QList<std::pair<int /* type */, qint64>> slideshowTimeList(const SlideshowData &sData, qint64 &totalTime);
 
     bool isTransition = false;
 

@@ -14,24 +14,21 @@ set(image_SRCS
     model/xmlpreviewgenerator.cpp
     model/imageproxymodel.cpp
     model/slidemodel.cpp
-    model/slidefiltermodel.cpp
     model/sortingmode.h
+    model/slidefiltermodel.cpp
     provider/xmlimageprovider.cpp
     provider/packageimageprovider.cpp
 )
 
-ecm_qt_declare_logging_category(image_SRCS HEADER debug.h
-                                           IDENTIFIER IMAGEWALLPAPER
-                                           CATEGORY_NAME kde.wallpapers.image
-                                           DEFAULT_SEVERITY Info)
+add_library(plasma_wallpaper_imageplugin SHARED ${image_SRCS})
 
-add_library(plasma_xml_wallpaper SHARED ${image_SRCS})
-
-target_link_libraries(plasma_xml_wallpaper
+target_link_libraries(plasma_wallpaper_imageplugin
     Qt::Core
+    Qt::Gui
     Qt::Quick
     Qt::Qml
     KF5::ConfigCore
+    KF5::CoreAddons
     KF5::I18n
     KF5::KIOCore
     KF5::KIOFileWidgets
@@ -41,5 +38,9 @@ target_link_libraries(plasma_xml_wallpaper
     KF5::Solid
 )
 
-install(TARGETS plasma_xml_wallpaper DESTINATION ${KDE_INSTALL_QMLDIR}/com/github/easyteacher/plasma/wallpapers/xml)
+if(BUILD_TESTING)
+   add_subdirectory(autotests)
+endif()
+
+install(TARGETS plasma_wallpaper_imageplugin DESTINATION ${KDE_INSTALL_QMLDIR}/com/github/easyteacher/plasma/wallpapers/xml)
 install(FILES qmldir DESTINATION ${KDE_INSTALL_QMLDIR}/com/github/easyteacher/plasma/wallpapers/xml)

@@ -11,16 +11,23 @@ import QtQuick 2.5
 import QtQuick.Controls 2.2 as QQC2
 import QtQuick.Window 2.2
 
-import com.github.easyteacher.plasma.wallpapers.xml 1.0
+import com.github.easyteacher.plasma.wallpapers.xml 2.0
 
 QQC2.StackView {
     id: root
 
-    readonly property bool blur: wallpaper.configuration.Blur || false
-    readonly property string configColor: wallpaper.configuration.Color || "#000000"
-    readonly property int fillMode: wallpaper.configuration.FillMode || 2
+    readonly property bool blur: wallpaper.configuration.Blur
+    readonly property string configColor: wallpaper.configuration.Color
+    readonly property int fillMode: wallpaper.configuration.FillMode
 
     readonly property size targetSize: Qt.size(root.width * Screen.devicePixelRatio, root.height * Screen.devicePixelRatio)
+
+    /**
+     * e.g. used by WallpaperInterface for drag and drop, will add the parent folder of the image.
+     */
+    function setUrl(url) {
+        backend.setUrl(url);
+    }
 
     function action_next() {
         backend.nextSlide();
@@ -42,6 +49,7 @@ QQC2.StackView {
         uncheckedSlides: wallpaper.configuration.UncheckedSlides
 
         onModelImageChanged: Qt.callLater(loadImage)
+        onSlidePathsChanged: wallpaper.configuration.SlidePaths = slidePaths
     }
 
     function loadImage() {

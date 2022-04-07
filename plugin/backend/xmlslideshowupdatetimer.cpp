@@ -6,8 +6,6 @@
 
 #include "xmlslideshowupdatetimer.h"
 
-#include <QDebug>
-
 #include "finder/xmlfinder.h"
 
 XmlSlideshowUpdateTimer::XmlSlideshowUpdateTimer(QObject *parent)
@@ -21,26 +19,10 @@ void XmlSlideshowUpdateTimer::adjustInterval(const QString &xmlpath)
         return;
     }
 
-    m_intervals.clear();
-
     const SlideshowData sData = XmlFinder::parseSlideshowXml(xmlpath, QSize(1920, 1080));
-    m_totalTime = 0;
 
-    for (const auto &item : std::as_const(sData.data)) {
-        m_intervals.append(std::make_pair(item.dataType, m_totalTime));
-        m_totalTime += item.duration;
-    }
-
-    m_intervals.append(std::make_pair(0, m_totalTime));
-
-    m_startTime = sData.starttime;
-
-    if (m_startTime.isNull()) {
-        // Use 0:00 as the start time
-        m_startTime = QDate::currentDate().startOfDay();
-    }
-
-    alignInterval();
+    m_intervals = slideshowTimeList(sData, m_totalTime);
+    m_startTime = slideshowStartTime(sData);
 }
 
 void XmlSlideshowUpdateTimer::alignInterval()
@@ -49,7 +31,7 @@ void XmlSlideshowUpdateTimer::alignInterval()
         return;
     }
 
-    const qint64 timeDiff = std::max<qint64>(0, m_startTime.secsTo(QDateTime::currentDateTime()));
+    const qint64 timeDiff = m_startTime.secsTo(QDateTime::currentDateTime());
 
     // Align to remaining time
     const qint64 modTime = timeDiff % m_totalTime;
@@ -80,6 +62,36 @@ void XmlSlideshowUpdateTimer::alignInterval()
 
     // At least 1min
     setInterval(std::max(60 * 1000, interval));
-    qCritical() << std::max(60 * 1000, interval);
     start();
+}
+
+QDateTime XmlSlideshowUpdateTimer::slideshowStartTime(const SlideshowData &sData)
+{
+    QDateTime startTime = sData.starttime;
+
+    if (startTime.isNull() || startTime > QDateTime::currentDateTime()) {
+        // Use 0:00 as the start time
+        startTime = QDate::currentDate().startOfDay().addDays(-1);
+
+        if (sData.starttime.time().isValid()) {
+            startTime.setTime(sData.starttime.time());
+        }
+    }
+
+    return startTime;
+}
+
+QList<std::pair<int, qint64>> XmlSlideshowUpdateTimer::slideshowTimeList(const SlideshowData &sData, qint64 &totalTime)
+{
+    QList<std::pair<int, qint64>> timeList;
+    totalTime = 0;
+
+    for (const auto &item : std::as_const(sData.data)) {
+        timeList.append(std::make_pair(item.dataType, totalTime));
+        totalTime += item.duration;
+    }
+
+    timeList.append(std::make_pair(0, totalTime));
+
+    return timeList;
 }

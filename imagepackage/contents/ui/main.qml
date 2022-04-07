@@ -2,16 +2,15 @@
     SPDX-FileCopyrightText: 2013 Marco Martin <mart@kde.org>
     SPDX-FileCopyrightText: 2014 Sebastian Kügler <sebas@kde.org>
     SPDX-FileCopyrightText: 2014 Kai Uwe Broulik <kde@privat.broulik.de>
-    SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
-import QtQuick 2.5
-import QtQuick.Controls 2.2 as QQC2
-import QtQuick.Window 2.2
+import QtQuick 2.15
+import QtQuick.Controls 2.15 as QQC2
+import QtQuick.Window 2.15
 
-import com.github.easyteacher.plasma.wallpapers.xml 1.0
+import com.github.easyteacher.plasma.wallpapers.xml 2.0
 
 QQC2.StackView {
     id: root
@@ -25,21 +24,19 @@ QQC2.StackView {
     ImageBackend {
         id: backend
 
-        image: wallpaper.configuration.Image || ""
+        image: wallpaper.configuration.Image
         targetSize: root.targetSize
         usedInConfig: false
 
         onModelImageChanged: Qt.callLater(loadImage)
+        onImageChanged: wallpaper.configuration.Image = image
     }
 
     /**
      * e.g. used by WallpaperInterface for drag and drop
      */
     function setUrl(url) {
-        wallpaper.configuration.Image = url
-        backend.imageModel.addBackground(url);
-        backend.imageModel.commitAddition();
-        backend.releaseImageModel();
+        backend.setUrl(url);
     }
 
     function loadImage() {

@@ -64,13 +64,14 @@ QVariant XmlImageListModel::data(const QModelIndex &index, int role) const
         return item.author;
 
     case ResolutionRole: {
-        QSize *size = m_imageSizeCache.object(item.path.toString());
+      const QString realPath = getRealPath(item);
+      QSize *size = m_imageSizeCache.object(realPath);
 
-        if (size && size->isValid()) {
-            return QString::fromLatin1("%1x%2").arg(size->width()).arg(size->height());;
-        }
+      if (size && size->isValid()) {
+        return QStringLiteral("%1x%2").arg(size->width()).arg(size->height());
+      }
 
-        asyncGetImageSize(item.path.toString(), QPersistentModelIndex(index));
+        asyncGetImageSize(realPath, QPersistentModelIndex(index));
 
         return QString();
     }
@@ -137,7 +138,11 @@ void XmlImageListModel::load(const QStringList &customPaths)
         const KConfigGroup cfg = KConfigGroup(KSharedConfig::openConfig(QStringLiteral("plasmarc")), QStringLiteral("Wallpapers"));
         m_removableWallpapers = cfg.readEntry("usersWallpapers", QStringList{});
 
-        m_customPaths = m_removableWallpapers + QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, QStringLiteral("gnome-background-properties/"), QStandardPaths::LocateDirectory);
+        m_customPaths = m_removableWallpapers +
+                        QStandardPaths::locateAll(
+                            QStandardPaths::GenericDataLocation,
+                            QStringLiteral("gnome-background-properties/"),
+                            QStandardPaths::LocateDirectory);
     } else {
         m_customPaths = customPaths;
     }
@@ -182,7 +187,6 @@ QStringList XmlImageListModel::addBackground(const QString &path)
     }
 
     endInsertRows();
-    Q_EMIT countChanged();
 
     return results;
 }
@@ -233,7 +237,6 @@ void XmlImageListModel::removeBackground(const QString &path)
     m_data.removeAt(idx);
 
     endRemoveRows();
-    Q_EMIT countChanged();
 }
 
 void XmlImageListModel::slotHandleXmlFound(const QList<WallpaperItem> &packages)
@@ -254,7 +257,6 @@ void XmlImageListModel::slotHandleXmlFound(const QList<WallpaperItem> &packages)
 
     endResetModel();
 
-    Q_EMIT countChanged();
     m_loading = false;
     Q_EMIT loaded(this);
 }
@@ -286,16 +288,33 @@ void XmlImageListModel::slotHandleXmlPreviewFailed(const WallpaperItem &item)
     m_previewJobsUrls.remove(item.path.toString());
 }
 
-void XmlImageListModel::asyncGetXmlPreview(const WallpaperItem& item, const QPersistentModelIndex& index) const
-{
-    if (m_previewJobsUrls.contains(item.path.toString()) || item.path.isEmpty()) {
-        return;
+void XmlImageListModel::asyncGetXmlPreview(
+    const WallpaperItem &item, const QPersistentModelIndex &index) const {
+  if (m_previewJobsUrls.contains(item.path.toString()) || item.path.isEmpty()) {
+    return;
+  }
+
+  XmlPreviewGenerator *finder = new XmlPreviewGenerator(item, m_screenshotSize);
+  connect(finder, &XmlPreviewGenerator::gotPreview, this,
+          &XmlImageListModel::slotHandleXmlPreview);
+  connect(finder, &XmlPreviewGenerator::failed, this,
+          &XmlImageListModel::slotHandleXmlPreviewFailed);
+  QThreadPool::globalInstance()->start(finder);
+
+  m_previewJobsUrls.insert(item.path.toString(), index);
+}
+
+QString XmlImageListModel::getRealPath(const WallpaperItem &item) const {
+  QString path = item.filename;
+
+  if (!item.slideshow.data.empty()) {
+    for (const auto &d : std::as_const(item.slideshow.data)) {
+      if (d.dataType == 0 && !d.file.isEmpty()) {
+        path = d.file;
+        break;
+      }
     }
+  }
 
-    XmlPreviewGenerator *finder = new XmlPreviewGenerator(item, m_screenshotSize);
-    connect(finder, &XmlPreviewGenerator::gotPreview, this, &XmlImageListModel::slotHandleXmlPreview);
-    connect(finder, &XmlPreviewGenerator::failed, this, &XmlImageListModel::slotHandleXmlPreviewFailed);
-    QThreadPool::globalInstance()->start(finder);
-
-    m_previewJobsUrls.insert(item.path.toString(), index);
+  return path;
 }

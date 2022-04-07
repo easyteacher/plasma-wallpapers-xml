@@ -13,13 +13,12 @@
 
 #include <KPackage/Package>
 
-void findPreferredImageInPackage(KPackage::Package &package, const QSize &targetSize);
 QString packageDisplayName(const KPackage::Package &b);
 
 /**
  * @todo write docs
  */
-class PackageFinder : public QObject,  public QRunnable
+class PackageFinder : public QObject, public QRunnable
 {
     Q_OBJECT
 
@@ -27,6 +26,8 @@ public:
     PackageFinder(const QStringList &paths, const QSize &targetSize, QObject *parent = nullptr);
 
     void run() override;
+
+    static void findPreferredImageInPackage(KPackage::Package &package, const QSize &targetSize);
 
 Q_SIGNALS:
     void packageFound(const QList<KPackage::Package> &packages);

@@ -14,7 +14,7 @@
 #include "distance.h"
 #include "findsymlinktarget.h"
 
-XmlFinder::XmlFinder(const QStringList& paths, const QSize &targetSize, QObject* parent)
+XmlFinder::XmlFinder(const QStringList &paths, const QSize &targetSize, QObject *parent)
     : QObject(parent)
     , m_paths(paths)
     , m_targetSize(targetSize)
@@ -73,6 +73,10 @@ void XmlFinder::run()
     QList<WallpaperItem> packages;
 
     for (const QString &path : std::as_const(xmls)) {
+        if (QFileInfo(path).isHidden()) {
+            continue;
+        }
+
         packages += parseXml(path, m_targetSize);
     }
 
@@ -139,11 +143,20 @@ QList<WallpaperItem> XmlFinder::parseXml(const QString &path, const QSize &targe
                     item.name = xml.readElementText();
                 } else if (xml.name() == QLatin1String("filename")) {
                     item.filename = xml.readElementText();
-                    if (item.filename.endsWith(QLatin1String(".xml"),Qt::CaseInsensitive)) {
+
+                    if (QFileInfo(item.filename).isRelative()) {
+                        item.filename = QFileInfo(path).absoluteDir().absoluteFilePath(item.filename);
+                    }
+
+                    if (item.filename.endsWith(QLatin1String(".xml"), Qt::CaseInsensitive)) {
                         item.slideshow = parseSlideshowXml(item.filename, targetSize);
                     }
                 } else if (xml.name() == QLatin1String("filename-dark")) {
                     item.filename_dark = xml.readElementText();
+
+                    if (QFileInfo(item.filename_dark).isRelative()) {
+                        item.filename_dark = QFileInfo(path).absoluteDir().absoluteFilePath(item.filename_dark);
+                    }
                 } else if (xml.name() == QLatin1String("author")) {
                     item.author = xml.readElementText();
                 }
@@ -193,6 +206,9 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
 
                 if (xml.isStartElement()) {
                     if (xml.name() == QLatin1String("starttime")) {
+                        int year = QDate::currentDate().year(), month = QDate::currentDate().month(), day = QDate::currentDate().day();
+                        int seconds = 0;
+
                         while (!xml.atEnd()) { // starttime
                             token = xml.readNext();
 
@@ -202,6 +218,8 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
 
                             if (xml.isEndElement()) {
                                 if (xml.name() == QLatin1String("starttime")) {
+                                    data.starttime.setDate(QDate(year, month, day));
+                                    data.starttime = data.starttime.addSecs(seconds);
                                     break; // starttime
                                 } else {
                                     continue;
@@ -209,17 +227,17 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                             }
 
                             if (xml.name() == QLatin1String("year")) {
-                                data.starttime = data.starttime.addYears(xml.readElementText().toInt());
+                                year = std::max(0, xml.readElementText().toInt());
                             } else if (xml.name() == QLatin1String("month")) {
-                                data.starttime = data.starttime.addMonths(xml.readElementText().toInt());
+                                month = std::clamp(xml.readElementText().toInt(), 1, 12);
                             } else if (xml.name() == QLatin1String("day")) {
-                                data.starttime = data.starttime.addDays(xml.readElementText().toInt());
+                                day = std::clamp(xml.readElementText().toInt(), 1, 31);
                             } else if (xml.name() == QLatin1String("hour")) {
-                                data.starttime = data.starttime.addSecs(xml.readElementText().toInt() * 3600);
+                                seconds += xml.readElementText().toInt() * 3600;
                             } else if (xml.name() == QLatin1String("minute")) {
-                                data.starttime = data.starttime.addSecs(xml.readElementText().toInt() * 60);
+                                seconds += xml.readElementText().toInt() * 60;
                             } else if (xml.name() == QLatin1String("second")) {
-                                data.starttime = data.starttime.addSecs(xml.readElementText().toInt());
+                                seconds += xml.readElementText().toInt();
                             }
                         }
                     } else if (xml.name() == QLatin1String("static")) {
@@ -254,6 +272,10 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                                 } else {
                                     sdata.file = findPreferredImage(results, targetSize);
                                 }
+
+                                if (QFileInfo(sdata.file).isRelative()) {
+                                    sdata.file = QFileInfo(path).absoluteDir().absoluteFilePath(sdata.file);
+                                }
                             }
                         }
                     } else if (xml.name() == QLatin1String("transition")) {
@@ -286,8 +308,16 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                                 tdata.duration = xml.readElementText().toDouble();
                             } else if (xml.name() == QLatin1String("from")) {
                                 tdata.from = xml.readElementText();
+
+                                if (QFileInfo(tdata.from).isRelative()) {
+                                    tdata.from = QFileInfo(path).absoluteDir().absoluteFilePath(tdata.from);
+                                }
                             } else if (xml.name() == QLatin1String("to")) {
                                 tdata.to = xml.readElementText();
+
+                                if (QFileInfo(tdata.to).isRelative()) {
+                                    tdata.to = QFileInfo(path).absoluteDir().absoluteFilePath(tdata.to);
+                                }
                             }
                         }
                     }

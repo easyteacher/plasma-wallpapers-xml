@@ -63,7 +63,7 @@ void PackageFinder::run()
             if (QFile::exists(folderPath + QLatin1String("/metadata.desktop")) || QFile::exists(folderPath + QLatin1String("/metadata.json"))) {
                 package.setPath(folderPath);
 
-                if (package.isValid() && package.metadata().isValid() && !package.filePath("images").isEmpty()) {
+                if (package.isValid() && package.metadata().isValid() && !QDir(package.filePath("images")).isEmpty()) {
                     findPreferredImageInPackage(package, m_targetSize);
                     packages << package;
                     folders << folderPath;
@@ -80,7 +80,7 @@ void PackageFinder::run()
     Q_EMIT packageFound(packages);
 }
 
-void PackageFinder::sort (QList<KPackage::Package> &list) const
+void PackageFinder::sort(QList<KPackage::Package> &list) const
 {
     QCollator collator;
 
@@ -97,7 +97,7 @@ void PackageFinder::sort (QList<KPackage::Package> &list) const
     std::stable_sort(list.begin(), list.end(), compare);
 }
 
-void findPreferredImageInPackage(KPackage::Package &package, const QSize &targetSize)
+void PackageFinder::findPreferredImageInPackage(KPackage::Package &package, const QSize &targetSize)
 {
     if (!package.isValid() || !package.filePath("preferred").isEmpty()) {
         return;

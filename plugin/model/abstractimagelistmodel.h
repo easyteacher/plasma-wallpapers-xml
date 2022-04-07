@@ -68,6 +68,7 @@ protected:
     QCache<QString, QSize> m_imageSizeCache;
 
     mutable QHash<QString, QPersistentModelIndex> m_previewJobsUrls;
+    mutable QHash<QString, QPersistentModelIndex> m_sizeJobsUrls;
 
     QHash<QString, bool> m_pendingDeletion;
     QStringList m_removableWallpapers;
@@ -79,9 +80,6 @@ private Q_SLOTS:
     void slotHandleImageSizeFound(const QString &path, const QSize &size);
     void slotHandlePreview(const KFileItem &item, const QPixmap &preview);
     void slotHandlePreviewFailed(const KFileItem &item);
-
-private:
-    mutable QHash<QString, QPersistentModelIndex> m_sizeJobsUrls;
 };
 
 #endif // ABSTRACTIMAGELISTMODEL_H

@@ -21,8 +21,8 @@ class XmlImageListModel : public AbstractImageListModel
 public:
     explicit XmlImageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent = nullptr);
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex& index, int role) const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
     /**
@@ -49,6 +49,8 @@ private Q_SLOTS:
 
 private:
     void asyncGetXmlPreview(const WallpaperItem &item, const QPersistentModelIndex &index) const;
+
+    QString getRealPath(const WallpaperItem &item) const;
 
     QList<WallpaperItem> m_data;
 };

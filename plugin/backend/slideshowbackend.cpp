@@ -6,7 +6,6 @@
     SPDX-FileCopyrightText: 2014 Sebastian Kügler <sebas@kde.org>
     SPDX-FileCopyrightText: 2015 Kai Uwe Broulik <kde@privat.broulik.de>
     SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
-    SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
@@ -23,12 +22,13 @@
 #include <KNotificationJobUiDelegate>
 #include <KPackage/PackageLoader>
 
+#include "finder/packagefinder.h"
 #include "model/slidefiltermodel.h"
 #include "model/slidemodel.h"
-#include "finder/packagefinder.h"
 
 SlideshowBackend::SlideshowBackend(QObject *parent)
     : ImageBackend(parent)
+    , m_slideshowMode(SortingMode::Random)
 {
     connect(&m_timer, &QTimer::timeout, this, &SlideshowBackend::nextSlide);
 }
@@ -168,7 +168,10 @@ void SlideshowBackend::setSlidePaths(const QStringList &_slidePaths)
         for (const QString &path : preProcessedPaths) {
             if (path == QLatin1String("preferred://wallpaperlocations")) {
                 slidePaths << QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, QStringLiteral("wallpapers"), QStandardPaths::LocateDirectory);
-                slidePaths << QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, QStringLiteral("gnome-background-properties"), QStandardPaths::LocateDirectory);;
+                slidePaths << QStandardPaths::locateAll(QStandardPaths::GenericDataLocation,
+                                                        QStringLiteral("gnome-background-properties"),
+                                                        QStandardPaths::LocateDirectory);
+                ;
                 slidePaths.removeAll(path);
 
                 break;
@@ -213,6 +216,36 @@ void SlideshowBackend::setUncheckedSlides(const QStringList &uncheckedSlides)
     Q_EMIT uncheckedSlidesChanged(); // Will trigger invalidateFilter
 }
 
+void SlideshowBackend::setUrl(const QString &_path)
+{
+    QString path = _path;
+
+    if (path.startsWith(QLatin1String("file://"))) {
+        path.remove(0, 7);
+    }
+
+    QFileInfo info(path);
+
+    if (!info.exists() || path.startsWith(QStandardPaths::writableLocation(QStandardPaths::TempLocation))) {
+        // No remote folder or temp folder
+        return;
+    }
+
+    if (info.isFile()) {
+        path = info.absoluteDir().absolutePath();
+    }
+
+    const QStringList results = m_slideshowModel->addDirs({path});
+
+    if (results.empty()) {
+        return;
+    }
+
+    // Restart slideshow
+    m_slidePaths.append(results);
+    Q_EMIT slidePathsChanged();
+}
+
 void SlideshowBackend::removeDir(const QString &path)
 {
     m_slideshowModel->removeDir(path);
@@ -230,25 +263,24 @@ void SlideshowBackend::showAddSlidePathsDialog()
         m_dialog->setOptions(QFileDialog::ShowDirsOnly);
         m_dialog->setAcceptMode(QFileDialog::AcceptOpen);
 
-        connect(m_dialog, &QDialog::accepted, this, [this]{
+        connect(m_dialog, &QDialog::accepted, this, [this] {
             const QString dir = m_dialog->directoryUrl().toLocalFile();
 
             m_slidePaths.append(m_slideshowModel->addDirs({dir}));
             Q_EMIT slidePathsChanged();
-
-            m_dialog->deleteLater();
-            m_dialog = nullptr;
         });
     }
 
     m_dialog->show();
+    m_dialog->raise();
+    m_dialog->activateWindow();
 }
 
 void SlideshowBackend::openModelImage() const
 {
     QUrl url;
 
-    switch(m_providerType) {
+    switch (m_providerType) {
     case Provider::Image: {
         url = m_image;
         break;
@@ -262,7 +294,7 @@ void SlideshowBackend::openModelImage() const
             return;
         }
 
-        findPreferredImageInPackage(package, m_targetSize);
+        PackageFinder::findPreferredImageInPackage(package, m_targetSize);
         url = QUrl::fromLocalFile(package.filePath("preferred"));
         break;
     }
@@ -314,7 +346,7 @@ void SlideshowBackend::startSlideshow()
     // about loading wallpaper slideshow while the thread runs
 }
 
-void SlideshowBackend::slotDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+void SlideshowBackend::slotDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
 {
     Q_UNUSED(bottomRight);
 
@@ -346,8 +378,7 @@ void SlideshowBackend::nextSlide()
 
     int previousSlide = m_currentSlide;
 
-    QUrl previousPath = m_slideFilterModel->index(m_currentSlide, 0).data(ImageRoles::PackageNameRole).toString();
-
+    QUrl previousPath(m_slideFilterModel->index(m_currentSlide, 0).data(ImageRoles::PackageNameRole).toString());
 
     if (m_currentSlide < 0 || m_currentSlide == rowCount - 1 || m_currentSlide >= rowCount) {
         m_currentSlide = 0;
@@ -360,11 +391,11 @@ void SlideshowBackend::nextSlide()
         m_slideFilterModel->invalidate();
     }
 
-    QUrl next = m_slideFilterModel->index(m_currentSlide, 0).data(ImageRoles::PackageNameRole).toString();
+    QUrl next(m_slideFilterModel->index(m_currentSlide, 0).data(ImageRoles::PackageNameRole).toString());
     // And avoid showing the same picture twice
     if (previousSlide == rowCount - 1 && previousPath == next && rowCount > 1) {
         m_currentSlide += 1;
-        next = m_slideFilterModel->index(m_currentSlide, 0).data(ImageRoles::PackageNameRole).toString();
+        next = QUrl(m_slideFilterModel->index(m_currentSlide, 0).data(ImageRoles::PackageNameRole).toString());
     }
 
     if (next.isEmpty()) {

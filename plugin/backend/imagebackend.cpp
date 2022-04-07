@@ -6,7 +6,6 @@
     SPDX-FileCopyrightText: 2014 Sebastian Kügler <sebas@kde.org>
     SPDX-FileCopyrightText: 2015 Kai Uwe Broulik <kde@privat.broulik.de>
     SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
-    SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
@@ -24,6 +23,7 @@
 #include <QUrlQuery>
 
 #include <KConfigGroup>
+#include <KIO/CopyJob>
 #include <KLocalizedString>
 #include <KPackage/Package>
 #include <KPackage/PackageLoader>
@@ -34,8 +34,6 @@
 
 #include "model/imageproxymodel.h"
 
-using namespace std::chrono_literals;
-
 ImageBackend::ImageBackend(QObject *parent)
     : QObject(parent)
     , m_targetSize(qGuiApp->primaryScreen()->size() * qGuiApp->primaryScreen()->devicePixelRatio())
@@ -43,6 +41,11 @@ ImageBackend::ImageBackend(QObject *parent)
     connect(&m_xmlTimer, &QTimer::timeout, this, &ImageBackend::modelImageChanged);
 
     useDefaultImage();
+}
+
+ImageBackend::~ImageBackend() noexcept
+{
+    delete m_dialog;
 }
 
 void ImageBackend::classBegin()
@@ -68,7 +71,7 @@ QUrl ImageBackend::image() const
     return m_image;
 }
 
-void ImageBackend::setImage(const QUrl& url)
+void ImageBackend::setImage(const QUrl &url)
 {
     if (m_image == url || url.isEmpty()) {
         return;
@@ -131,7 +134,7 @@ void ImageBackend::useDefaultImage()
         package.setPath(QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("wallpapers/") + image, QStandardPaths::LocateDirectory));
 
         if (package.isValid()) {
-            m_image = package.path();
+            m_image = QUrl::fromLocalFile(package.path());
         }
     }
 
@@ -141,9 +144,9 @@ void ImageBackend::useDefaultImage()
         QString path = theme.wallpaperPath();
         int index = path.indexOf(QLatin1String("/contents/images/"));
         if (index > -1) { // We have file from package -> get path to package
-            m_image = path.left(index);
+            m_image = QUrl::fromLocalFile(path.left(index));
         } else {
-            m_image = path;
+            m_image = QUrl::fromLocalFile(path);
         }
     }
 
@@ -167,6 +170,48 @@ void ImageBackend::releaseImageModel()
         m_imageModel->deleteLater();
         m_imageModel = nullptr;
     }
+}
+
+void ImageBackend::setUrl(const QString &_path)
+{
+    QString path = _path;
+
+    if (_path.startsWith(QLatin1String("file://"))) {
+        path.remove(0, 7);
+    }
+
+    if (path.startsWith(QStandardPaths::writableLocation(QStandardPaths::TempLocation))) {
+        // Drag and drop image
+        QFileInfo info(path);
+        QDir wallpaperDir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/wallpapers/");
+
+        const QString wallpaperPath = wallpaperDir.absoluteFilePath(info.fileName());
+
+        if (wallpaperDir.mkpath(wallpaperDir.absolutePath()) && !info.fileName().isEmpty()) {
+            KIO::CopyJob *job = KIO::copy(QUrl::fromLocalFile(path), QUrl::fromLocalFile(wallpaperPath), KIO::HideProgressInfo);
+
+            connect(job, &KJob::result, this, &ImageBackend::slotCopyWallpaperResult);
+        }
+
+        return;
+    }
+
+    QStringList results = imageModel()->addBackground(path);
+
+    m_imageModel->commitAddition();
+
+    if (!m_usedInConfig) {
+        releaseImageModel();
+    }
+
+    if (results.empty()) {
+        return;
+    }
+
+    m_image = QUrl(results.constFirst());
+    Q_EMIT imageChanged();
+
+    setModelImage();
 }
 
 void ImageBackend::showFileDialog()
@@ -299,8 +344,7 @@ void ImageBackend::slotUpdateXmlImage(const QPalette &palette)
     QUrl url(m_image);
     QUrlQuery urlQuery(url);
 
-    QString filename = useDark ? urlQuery.queryItemValue(QStringLiteral("filename_dark"))
-        : urlQuery.queryItemValue(QStringLiteral("filename"));
+    QString filename = useDark ? urlQuery.queryItemValue(QStringLiteral("filename_dark")) : urlQuery.queryItemValue(QStringLiteral("filename"));
 
     if (filename.isEmpty()) {
         // Dark mode is not available, fall back to light mode
@@ -311,9 +355,6 @@ void ImageBackend::slotUpdateXmlImage(const QPalette &palette)
         urlQuery.addQueryItem(QStringLiteral("darkmode"), QString::number(1));
         url.setQuery(urlQuery);
     }
-
-    m_modelImage = url;
-    Q_EMIT modelImageChanged();
 
     // CHeck if the timer should be activated
     if (filename.endsWith(QLatin1String(".xml"))) {
@@ -336,15 +377,17 @@ void ImageBackend::slotUpdateXmlImage(const QPalette &palette)
         if (m_resumeConnection) {
             disconnect(m_resumeConnection);
         }
-
         m_xmlTimer.stop();
         m_xmlTimer.isTransition = false;
     }
+
+    m_modelImage = url;
+    Q_EMIT modelImageChanged();
 }
 
 void ImageBackend::slotWallpaperBrowseCompleted()
 {
-    if (!m_imageModel || !m_dialog || m_dialog->selectedFiles().count() == 0) {
+    if (!m_dialog || !m_imageModel || m_dialog->selectedFiles().count() == 0) {
         return;
     }
 
@@ -353,4 +396,29 @@ void ImageBackend::slotWallpaperBrowseCompleted()
     for (const QString &p : selectedFiles) {
         m_imageModel->addBackground(p);
     }
+}
+
+void ImageBackend::slotCopyWallpaperResult(KJob *job)
+{
+    KIO::CopyJob *copyJob = qobject_cast<KIO::CopyJob *>(job);
+
+    if (!copyJob || copyJob->error()) {
+        return;
+    }
+
+    QStringList results = imageModel()->addBackground(copyJob->destUrl().toLocalFile());
+    m_imageModel->commitAddition();
+
+    if (!m_usedInConfig) {
+        releaseImageModel();
+    }
+
+    if (results.empty()) {
+        return;
+    }
+
+    m_image = QUrl(results.at(0));
+    Q_EMIT imageChanged();
+
+    setModelImage();
 }
