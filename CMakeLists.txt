@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 
 project(plasma-wallpapers-xml)
-set(PROJECT_VERSION "0.2.0")
-set(PROJECT_VERSION_MAJOR 0)
+set(PROJECT_VERSION "1.0.0")
+set(PROJECT_VERSION_MAJOR 1)
 
 set(KF5_MIN_VERSION "5.66.0")
 set(QT_MIN_VERSION "5.15.0")
