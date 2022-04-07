@@ -11,7 +11,7 @@ import QtQuick.Controls 2.5 as QQC2
 
 import org.kde.kcm 1.5 as KCM
 
-import com.github.easyteacher.plasma.wallpapers.xml 1.0
+import com.github.easyteacher.plasma.wallpapers.xml 2.0
 
 Row {
     id: slideshowModeRow

@@ -6,11 +6,9 @@
     SPDX-FileCopyrightText: 2014 Sebastian Kügler <sebas@kde.org>
     SPDX-FileCopyrightText: 2015 Kai Uwe Broulik <kde@privat.broulik.de>
     SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
-    SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-
 
 #ifndef SLIDESHOWBACKEND_H
 #define SLIDESHOWBACKEND_H
@@ -22,7 +20,7 @@ class SlideModel;
 class SlideFilterModel;
 
 /**
- * @todo write docs
+ * A backend for running slideshow
  */
 class SlideshowBackend : public ImageBackend
 {
@@ -58,6 +56,8 @@ public:
 
     QStringList uncheckedSlides() const;
     void setUncheckedSlides(const QStringList &uncheckedList);
+
+    Q_INVOKABLE void setUrl(const QString &path) override;
 
     Q_INVOKABLE void removeDir(const QString &path);
     Q_INVOKABLE void showAddSlidePathsDialog();

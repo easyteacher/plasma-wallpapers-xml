@@ -25,6 +25,7 @@ class ImageProxyModel : public QConcatenateTablesProxyModel, public ImageRoles
     Q_OBJECT
 
     Q_PROPERTY(int count READ count NOTIFY countChanged)
+    Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
 
 public:
     explicit ImageProxyModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent);
@@ -34,9 +35,11 @@ public:
     int count() const;
     Q_INVOKABLE int indexOf(const QString &packagePath) const;
 
+    bool loading() const;
+
     Q_INVOKABLE void reload();
-    Q_INVOKABLE void addBackground(const QString &_path);
-    void removeBackground(const QString &path);
+    Q_INVOKABLE QStringList addBackground(const QString &_path);
+    void removeBackground(const QString &packagePath);
 
     Q_INVOKABLE void commitAddition();
     Q_INVOKABLE void commitDeletion();
@@ -45,6 +48,7 @@ public:
 
 Q_SIGNALS:
     void countChanged();
+    void loadingChanged();
     void targetSizeChanged(const QSize &size);
 
 private Q_SLOTS:
@@ -55,7 +59,11 @@ private:
     PackageListModel *m_packageModel;
     XmlImageListModel *m_xmlModel;
 
+    int m_loaded = 0;
+
     QStringList m_pendingAddition;
+
+    friend class ModelTest;
 };
 
 #endif // IMAGEPROXYMODEL_H

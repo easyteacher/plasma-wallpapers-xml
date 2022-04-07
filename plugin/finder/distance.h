@@ -14,7 +14,6 @@
  */
 static float distance(const QSize &size, const QSize &desired)
 {
-
     float desiredAspectRatio = (desired.height() > 0) ? desired.width() / static_cast<float>(desired.height()) : 0;
     float candidateAspectRatio = (size.height() > 0) ? size.width() / static_cast<float>(size.height()) : std::numeric_limits<float>::max();
 

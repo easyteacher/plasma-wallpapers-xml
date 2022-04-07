@@ -14,7 +14,7 @@ import QtQuick.Window 2.0 // for Screen
 import org.kde.kirigami 2.5 as Kirigami
 import org.kde.newstuff 1.91 as NewStuff
 
-import com.github.easyteacher.plasma.wallpapers.xml 1.0
+import com.github.easyteacher.plasma.wallpapers.xml 2.0
 
 ColumnLayout {
     id: root

@@ -8,8 +8,8 @@
 
 #include <QCollator>
 #include <QDir>
-#include <QMimeDatabase>
 #include <QImageReader>
+#include <QMimeDatabase>
 #include <QSet>
 
 #include "findsymlinktarget.h"
@@ -40,7 +40,7 @@ void ImageFinder::run()
             continue;
         }
 
-        if (info.baseName() == QLatin1String("screenshot") || target.contains(QLatin1String("contents/images"))) {
+        if (info.isHidden() || info.baseName() == QLatin1String("screenshot") || target.contains(QLatin1String("contents/images"))) {
             // is a package
             continue;
         }
@@ -54,7 +54,8 @@ void ImageFinder::run()
         const QFileInfoList files = dir.entryInfoList();
 
         for (const QFileInfo &wp : files) {
-            if (QString t(findSymlinkTarget(wp)); wp.isFile() && !t.contains(QLatin1String("contents/images")) && wp.baseName() != QLatin1String("screenshot")) {
+            if (QString t(findSymlinkTarget(wp));
+                wp.isFile() && !t.contains(QLatin1String("contents/images")) && wp.baseName() != QLatin1String("screenshot")) {
                 images.append(t);
             } else {
                 const QString name = wp.fileName();

@@ -6,7 +6,6 @@
     SPDX-FileCopyrightText: 2014 Sebastian Kügler <sebas@kde.org>
     SPDX-FileCopyrightText: 2015 Kai Uwe Broulik <kde@privat.broulik.de>
     SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
-    SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
@@ -23,9 +22,10 @@
 
 class QFileDialog;
 class ImageProxyModel;
+class KJob;
 
 /**
- * @todo write docs
+ * A backend for providing wallpaper urls.
  */
 class ImageBackend : public QObject, public QQmlParserStatus
 {
@@ -63,6 +63,7 @@ public:
     Q_ENUM(Provider)
 
     explicit ImageBackend(QObject *parent = nullptr);
+    ~ImageBackend();
 
     virtual void classBegin() override;
     virtual void componentComplete() override;
@@ -81,9 +82,11 @@ public:
     void setTargetSize(const QSize &size);
 
     Q_INVOKABLE void useDefaultImage();
-    ImageProxyModel *imageModel();
-    Q_INVOKABLE void releaseImageModel();
 
+    ImageProxyModel *imageModel();
+    void releaseImageModel();
+
+    Q_INVOKABLE virtual void setUrl(const QString &path);
     Q_INVOKABLE void showFileDialog();
 
 Q_SIGNALS:
@@ -112,6 +115,7 @@ protected:
 protected Q_SLOTS:
     void slotUpdateXmlImage(const QPalette &palette);
     void slotWallpaperBrowseCompleted();
+    void slotCopyWallpaperResult(KJob *job);
 
 private:
     ImageProxyModel *m_imageModel = nullptr;

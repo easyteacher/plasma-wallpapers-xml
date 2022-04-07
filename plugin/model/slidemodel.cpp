@@ -6,7 +6,7 @@
 
 #include "slidemodel.h"
 
-#include <QFileInfo>
+#include <QDir>
 
 #include <KIO/OpenFileManagerWindowJob>
 
@@ -17,7 +17,9 @@ SlideModel::SlideModel(const QSize &targetSize, QObject *parent)
     : QConcatenateTablesProxyModel(parent)
     , m_targetSize(targetSize)
 {
-    connect(this, &SlideModel::targetSizeChanged, [this](const QSize &s) { m_targetSize = s; });
+    connect(this, &SlideModel::targetSizeChanged, [this](const QSize &s) {
+        m_targetSize = s;
+    });
 }
 
 QHash<int, QByteArray> SlideModel::roleNames() const
@@ -84,23 +86,27 @@ QStringList SlideModel::addDirs(const QStringList &dirs)
 {
     QStringList added;
 
-    for (const QString &p : dirs) {
-        if (!m_models.contains(p) && QFileInfo(p).isDir()) {
-            auto *m = new ImageProxyModel({p}, m_targetSize, this);
+    for (const QString &_d : dirs) {
+        const QString d = _d.endsWith(QDir::separator()) ? _d : _d + QDir::separator();
+
+        if (!m_models.contains(d) && QFileInfo(d).isDir()) {
+            auto *m = new ImageProxyModel({d}, m_targetSize, this);
 
             connect(this, &SlideModel::targetSizeChanged, m, &ImageProxyModel::targetSizeChanged);
 
-            m_models.insert(p, m);
+            m_models.insert(d, m);
             addSourceModel(m);
-            added.append(p);
+            added.append(d);
         }
     }
 
     return added;
 }
 
-void SlideModel::removeDir(const QString &dir)
+void SlideModel::removeDir(const QString &_dir)
 {
+    const QString dir = _dir.endsWith(QDir::separator()) ? _dir : _dir + QDir::separator();
+
     if (!m_models.contains(dir)) {
         return;
     }

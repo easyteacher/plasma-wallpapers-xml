@@ -8,9 +8,9 @@
 
 #include <random>
 
+#include <QFileInfo>
 #include <QSortFilterProxyModel>
 #include <QVector>
-#include <QFileInfo>
 
 #include "imageroles.h"
 #include "sortingmode.h"
@@ -19,7 +19,12 @@ class SlideFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(bool usedInConfig MEMBER m_usedInConfig NOTIFY usedInConfigChanged);
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
+    /**
+     * This property is to keep compatible with ImageProxyModel.
+     */
+    Q_PROPERTY(bool loading MEMBER m_loading CONSTANT)
+    Q_PROPERTY(bool usedInConfig MEMBER m_usedInConfig NOTIFY usedInConfigChanged)
 
 public:
     explicit SlideFilterModel(QObject *parent = nullptr);
@@ -29,6 +34,8 @@ public:
     bool lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const override;
     bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
     void setSourceModel(QAbstractItemModel *sourceModel) override;
+
+    int count() const;
 
     void setSortingMode(SortingMode::Mode slideshowMode, bool slideshowFoldersFirst);
     void invalidate();
@@ -40,13 +47,16 @@ public Q_SLOTS:
     void invalidateFilter();
 
 Q_SIGNALS:
+    void countChanged();
     void usedInConfigChanged();
 
 private:
     void buildRandomOrder();
 
-    QString getLocalFilePath(const QModelIndex& modelIndex) const;
-    QString getFilePathWithDir(const QFileInfo& fileInfo) const;
+    QString getLocalFilePath(const QModelIndex &modelIndex) const;
+    QString getFilePathWithDir(const QFileInfo &fileInfo) const;
+
+    bool m_loading = false;
 
     QVector<int> m_randomOrder;
     SortingMode::Mode m_SortingMode;

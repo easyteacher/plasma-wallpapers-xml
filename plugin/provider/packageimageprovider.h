@@ -18,7 +18,7 @@ class PackageImageProvider : public QQuickAsyncImageProvider
 public:
     explicit PackageImageProvider();
 
-    QQuickImageResponse* requestImageResponse(const QString& id, const QSize& requestedSize) override;
+    QQuickImageResponse *requestImageResponse(const QString &id, const QSize &requestedSize) override;
 
 private:
     QThreadPool m_pool;

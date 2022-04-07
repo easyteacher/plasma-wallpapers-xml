@@ -13,7 +13,7 @@
 /**
  * @todo write docs
  */
-class ImageSizeFinder : public QObject,  public QRunnable
+class ImageSizeFinder : public QObject, public QRunnable
 {
     Q_OBJECT
 

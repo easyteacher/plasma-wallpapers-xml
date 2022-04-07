@@ -90,7 +90,7 @@ struct SlideshowData {
 struct WallpaperItem {
     QString _root;
     QUrl path; // image://gnome-wp-list/get?...
-    QString filename;  // The path can be an xml file or an image file
+    QString filename; // The path can be an xml file or an image file
     QString filename_dark;
     QString name;
     QString author;

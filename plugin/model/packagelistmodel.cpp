@@ -18,19 +18,19 @@
 
 #include "../finder/packagefinder.h"
 
-PackageListModel::PackageListModel(const QStringList &customPaths, const QSize &targetSize, QObject* parent)
+PackageListModel::PackageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent)
     : AbstractImageListModel(customPaths, targetSize, parent)
 {
     qRegisterMetaType<QList<KPackage::Package>>();
     load(customPaths);
 }
 
-int PackageListModel::rowCount(const QModelIndex& parent) const
+int PackageListModel::rowCount(const QModelIndex &parent) const
 {
     return parent.isValid() ? 0 : m_packages.size();
 }
 
-QVariant PackageListModel::data(const QModelIndex& index, int role) const
+QVariant PackageListModel::data(const QModelIndex &index, int role) const
 {
     const int row = index.row();
 
@@ -76,7 +76,7 @@ QVariant PackageListModel::data(const QModelIndex& index, int role) const
         QSize *size = m_imageSizeCache.object(path);
 
         if (size && size->isValid()) {
-            return QStringLiteral("%1x%2").arg(size->width(), size->height());
+            return QStringLiteral("%1x%2").arg(size->width()).arg(size->height());
         }
 
         asyncGetImageSize(path, QPersistentModelIndex(index));
@@ -175,7 +175,7 @@ QStringList PackageListModel::addBackground(const QString &path)
         return {};
     }
 
-    findPreferredImageInPackage(package, m_targetSize);
+    PackageFinder::findPreferredImageInPackage(package, m_targetSize);
 
     beginInsertRows(QModelIndex(), 0, 0);
 
@@ -187,9 +187,8 @@ QStringList PackageListModel::addBackground(const QString &path)
     }
 
     endInsertRows();
-    Q_EMIT countChanged();
 
-    return {path};
+    return {package.path()};
 }
 
 void PackageListModel::removeBackground(const QString &path)
@@ -211,7 +210,6 @@ void PackageListModel::removeBackground(const QString &path)
     m_packages.removeAt(idx);
 
     endRemoveRows();
-    Q_EMIT countChanged();
 
     // Uninstall local package
     if (!path.startsWith(s_localImageDir)) {
@@ -242,8 +240,6 @@ void PackageListModel::slotHandlePackageFound(const QList<KPackage::Package> &pa
 
     endResetModel();
 
-    Q_EMIT countChanged();
     m_loading = false;
     Q_EMIT loaded(this);
 }
-

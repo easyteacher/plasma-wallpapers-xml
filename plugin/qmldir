@@ -1,5 +1,5 @@
 module com.github.easyteacher.plasma.wallpapers.xml
-plugin plasma_xml_wallpaper
+plugin plasma_wallpaper_imageplugin
 
 
 

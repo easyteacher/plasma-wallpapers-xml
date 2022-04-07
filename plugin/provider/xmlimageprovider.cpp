@@ -10,7 +10,8 @@
 #include <QPainter>
 #include <QUrlQuery>
 
-#include "../finder/xmlfinder.h"
+#include "backend/xmlslideshowupdatetimer.h"
+#include "finder/xmlfinder.h"
 
 class AsyncXmlImageResponseRunnable : public QObject, public QRunnable
 {
@@ -44,7 +45,7 @@ public:
      */
     explicit AsyncXmlImageResponse(const QString &path, const QSize &requestedSize, QThreadPool *pool);
 
-    QQuickTextureFactory* textureFactory() const override;
+    QQuickTextureFactory *textureFactory() const override;
 
 protected Q_SLOTS:
     void slotHandleDone(const QImage &image);
@@ -80,55 +81,40 @@ void AsyncXmlImageResponseRunnable::run()
     }
 
     if (path.endsWith(QLatin1String(".xml"), Qt::CaseInsensitive)) {
-        const SlideshowData data = XmlFinder::parseSlideshowXml(path, m_requestedSize);
+        const SlideshowData sData = XmlFinder::parseSlideshowXml(path, m_requestedSize);
 
-        if (data.data.empty()) {
+        if (sData.data.empty()) {
             Q_EMIT done(QImage());
             return;
         }
 
-        QDateTime startTime = data.starttime;
-
-        if (startTime.isNull()) {
-            // Use 0:00 as the start time
-            startTime = QDate::currentDate().startOfDay();
-        }
-
-        const qint64 timeDiff = std::max<qint64>(0, startTime.secsTo(QDateTime::currentDateTime()));
+        const QDateTime startTime = XmlSlideshowUpdateTimer::slideshowStartTime(sData);
+        const qint64 timeDiff = startTime.secsTo(QDateTime::currentDateTime());
 
         // Caculate cycle length
-        qint64 totalTime = 0;
-        QVector<qint64> timeList;
+        qint64 totalTime;
+        auto timeList = XmlSlideshowUpdateTimer::slideshowTimeList(sData, totalTime);
         QString fallbackPath;
-
-        for (const auto &item : std::as_const(data.data)) {
-            timeList.append(totalTime);
-            totalTime += item.duration;
-
-            if (fallbackPath.isEmpty() && item.dataType == 0) {
-                fallbackPath = item.file;
-            }
-        }
-
-        timeList.append(totalTime);
-
 
         if (totalTime > 0) {
             // Mod
             qint64 modTime = timeDiff % totalTime;
 
             for (int i = 0; i < timeList.size(); i++) {
-                if (timeList[i] > modTime) {
-                    const SlideshowItemData &item = data.data.at(i - 1);
+                const auto &nextP = timeList.at(i);
 
-                    if (item.dataType == 0) {
+                if (nextP.second > modTime) {
+                    const auto &p = timeList.at(i - 1);
+                    const SlideshowItemData &item = sData.data.at(i - 1);
+
+                    if (p.first == 0) {
                         // static
                         path = item.file;
-                    } else if (item.dataType == 1) {
+                    } else {
                         // Blend two images, like gdk_pixbuf_composite
                         QImage from(item.from);
                         QImage to(item.to);
-                        const double opacity = 1.0 - (timeList[i] - modTime) / static_cast<double>(timeList[i] - timeList[i - 1]);
+                        const double opacity = 1.0 - (p.second - modTime) / static_cast<double>(nextP.second - p.second);
 
                         blendImages(from, to, opacity);
 
@@ -190,7 +176,7 @@ void AsyncXmlImageResponse::slotHandleDone(const QImage &image)
     emit finished();
 }
 
-QQuickTextureFactory* AsyncXmlImageResponse::textureFactory() const
+QQuickTextureFactory *AsyncXmlImageResponse::textureFactory() const
 {
     return QQuickTextureFactory::textureFactoryForImage(m_image);
 }
@@ -199,7 +185,7 @@ XmlImageProvider::XmlImageProvider()
 {
 }
 
-QQuickImageResponse* XmlImageProvider::requestImageResponse(const QString& id, const QSize& requestedSize)
+QQuickImageResponse *XmlImageProvider::requestImageResponse(const QString &id, const QSize &requestedSize)
 {
     AsyncXmlImageResponse *response = new AsyncXmlImageResponse(id, requestedSize, &m_pool);
 
@@ -207,4 +193,3 @@ QQuickImageResponse* XmlImageProvider::requestImageResponse(const QString& id, c
 }
 
 #include "xmlimageprovider.moc"
-

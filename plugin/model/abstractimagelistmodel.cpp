@@ -6,9 +6,7 @@
 
 #include "abstractimagelistmodel.h"
 
-#include <QGuiApplication>
 #include <QPixmap>
-#include <QScreen>
 #include <QThreadPool>
 
 #include <KFileItem>
@@ -18,12 +16,16 @@
 
 AbstractImageListModel::AbstractImageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent)
     : QAbstractListModel(parent)
-    , m_screenshotSize(qGuiApp->primaryScreen()->size() / 8)
+    , m_screenshotSize(targetSize / 8)
     , m_targetSize(targetSize)
     , m_customPaths(customPaths)
 {
     m_imageCache.setMaxCost(m_screenshotSize.width() * m_screenshotSize.height() * 20);
     m_imageSizeCache.setMaxCost(20);
+
+    connect(this, &QAbstractListModel::rowsInserted, this, &AbstractImageListModel::countChanged);
+    connect(this, &QAbstractListModel::rowsRemoved, this, &AbstractImageListModel::countChanged);
+    connect(this, &QAbstractListModel::modelReset, this, &AbstractImageListModel::countChanged);
 
     connect(&m_dirWatch, &KDirWatch::deleted, this, &AbstractImageListModel::removeBackground);
 }
@@ -45,7 +47,7 @@ QHash<int, QByteArray> AbstractImageListModel::roleNames() const
 
 int AbstractImageListModel::count() const
 {
-    return rowCount(QModelIndex());
+    return rowCount();
 }
 
 void AbstractImageListModel::reload()
@@ -67,9 +69,9 @@ void AbstractImageListModel::slotHandleImageSizeFound(const QString &path, const
 {
     const QPersistentModelIndex index = m_sizeJobsUrls.take(path);
 
-    m_imageSizeCache.insert(path, new QSize(size), 1);
-
-    Q_EMIT dataChanged(index, index, {ResolutionRole});
+    if (m_imageSizeCache.insert(path, new QSize(size), 1)) {
+        Q_EMIT dataChanged(index, index, {ResolutionRole});
+    }
 }
 
 void AbstractImageListModel::slotHandlePreview(const KFileItem &item, const QPixmap &preview)

@@ -19,4 +19,3 @@ void ImageSizeFinder::run()
     const QImageReader reader(m_path);
     Q_EMIT sizeFound(m_path, reader.size());
 }
-

@@ -25,12 +25,12 @@ ImageListModel::ImageListModel(const QStringList &customPaths, const QSize &targ
     load(customPaths);
 }
 
-int ImageListModel::rowCount(const QModelIndex& parent) const
+int ImageListModel::rowCount(const QModelIndex &parent) const
 {
     return parent.isValid() ? 0 : m_data.size();
 }
 
-QVariant ImageListModel::data(const QModelIndex& index, int role) const
+QVariant ImageListModel::data(const QModelIndex &index, int role) const
 {
     const int row = index.row();
 
@@ -62,7 +62,7 @@ QVariant ImageListModel::data(const QModelIndex& index, int role) const
         QSize *size = m_imageSizeCache.object(m_data.at(row));
 
         if (size && size->isValid()) {
-            return QString::fromLatin1("%1x%2").arg(size->width()).arg(size->height());;
+            return QStringLiteral("%1x%2").arg(size->width()).arg(size->height());
         }
 
         asyncGetImageSize(m_data.at(row), QPersistentModelIndex(index));
@@ -106,8 +106,14 @@ bool ImageListModel::setData(const QModelIndex &index, const QVariant &value, in
     return false;
 }
 
-int ImageListModel::indexOf(const QString &path) const
+int ImageListModel::indexOf(const QString &_path) const
 {
+    QString path = _path;
+
+    if (path.startsWith(QLatin1String("file://"))) {
+        path.remove(0, 7);
+    }
+
     const auto it = std::find_if(m_data.cbegin(), m_data.cend(), [&path](const QString &p) {
         return path == p;
     });
@@ -137,7 +143,8 @@ void ImageListModel::load(const QStringList &customPaths)
         KConfigGroup cfg = KConfigGroup(KSharedConfig::openConfig(QStringLiteral("plasmarc")), QStringLiteral("Wallpapers"));
         m_removableWallpapers = cfg.readEntry("usersWallpapers", QStringList{});
 
-        m_customPaths = m_removableWallpapers + QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, QStringLiteral("wallpapers/"), QStandardPaths::LocateDirectory);
+        m_customPaths = m_removableWallpapers
+            + QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, QStringLiteral("wallpapers/"), QStandardPaths::LocateDirectory);
     } else {
         m_customPaths = customPaths;
     }
@@ -170,7 +177,6 @@ void ImageListModel::slotHandleImageFound(const QStringList &paths)
     }
 
     endResetModel();
-    Q_EMIT countChanged();
 
     m_loading = false;
     Q_EMIT loaded(this);
@@ -181,7 +187,6 @@ QStringList ImageListModel::addBackground(const QString &path)
     if (path.isEmpty() || !QFile::exists(path) || m_data.contains(path)) {
         return {};
     }
-
 
     if (!suffixes().contains(QStringLiteral("*.%1").arg(QFileInfo(path).suffix()))) {
         // Format not supported
@@ -198,7 +203,6 @@ QStringList ImageListModel::addBackground(const QString &path)
     }
 
     endInsertRows();
-    Q_EMIT countChanged();
 
     return {path};
 }
@@ -224,7 +228,6 @@ void ImageListModel::removeBackground(const QString &path)
     m_dirWatch.removeFile(path);
 
     endRemoveRows();
-    Q_EMIT countChanged();
 
     // Remove local wallpaper
     if (path.startsWith(s_localImageDir)) {
@@ -235,4 +238,3 @@ void ImageListModel::removeBackground(const QString &path)
         }
     }
 }
-
