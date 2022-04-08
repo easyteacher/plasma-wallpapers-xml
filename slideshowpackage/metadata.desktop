@@ -1,0 +1,20 @@
+[Desktop Entry]
+Name=XML Wallpaper
+Name[zh_CN]=XML 壁纸
+Name[zh_TW]=XML 桌布
+Comment=Slideshow wallpaper
+Comment[zh_CN]=幻灯片壁纸
+Icon=folder-image
+
+Type=Service
+X-KDE-ServiceTypes=Plasma/Wallpaper
+X-KDE-ParentApp=org.kde.plasmashell
+
+X-KDE-PluginInfo-Author=Fushan Wen
+X-KDE-PluginInfo-Category=
+X-KDE-PluginInfo-Email=qydwhotmail@gmail.com
+X-KDE-PluginInfo-EnabledByDefault=true
+X-KDE-PluginInfo-Name=com.github.easyteacher.plasma.wallpapers.xml.slideshow
+X-KDE-PluginInfo-License=GPLv2+
+X-KDE-PluginInfo-Version=1.0.0
+X-KDE-PluginInfo-Website=https://github.com/easyteacher/plasma-wallpapers-xml

@@ -1,0 +1,21 @@
+[Desktop Entry]
+Name=XML Wallpaper
+Name[zh_CN]=XML 壁纸
+Name[zh_TW]=XML 桌布
+Comment=XML Wallpaper
+Comment[zh_CN]=支持XML格式的壁纸插件
+Comment[zh_TW]=支持XML格式的壁纸插件
+Icon=preferences-desktop-wallpaper
+
+Type=Service
+X-KDE-ServiceTypes=Plasma/Wallpaper
+X-KDE-ParentApp=org.kde.plasmashell
+
+X-KDE-PluginInfo-Author=Fushan Wen
+X-KDE-PluginInfo-Category=
+X-KDE-PluginInfo-Email=qydwhotmail@gmail.com
+X-KDE-PluginInfo-EnabledByDefault=true
+X-KDE-PluginInfo-Name=com.github.easyteacher.plasma.wallpapers.xml
+X-KDE-PluginInfo-License=GPLv2+
+X-KDE-PluginInfo-Version=1.0.0
+X-KDE-PluginInfo-Website=https://github.com/easyteacher/plasma-wallpapers-xml
