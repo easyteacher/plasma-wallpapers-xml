@@ -8,7 +8,6 @@
 #define FINDSYMLINKTARGET_H
 
 #include <QFileInfo>
-#include <QSize>
 
 static QString findSymlinkTarget(const QFileInfo &info)
 {
@@ -29,17 +28,6 @@ static QString findSymlinkTarget(const QFileInfo &info)
     }
 
     return target;
-}
-
-inline QSize resSize(const QString &str)
-{
-    int index = str.indexOf('x');
-
-    if (index != -1) {
-        return QSize(QStringView(str).left(index).toInt(), QStringView(str).mid(index + 1).toInt());
-    }
-
-    return QSize();
 }
 
 #endif

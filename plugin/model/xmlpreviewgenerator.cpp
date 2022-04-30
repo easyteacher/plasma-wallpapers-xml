@@ -6,10 +6,13 @@
 
 #include "xmlpreviewgenerator.h"
 
-#include <math.h>
+#include <cmath>
 
+#include <QEventLoop>
 #include <QFile>
 #include <QPainter>
+
+#include <KIO/PreviewJob>
 
 XmlPreviewGenerator::XmlPreviewGenerator(const WallpaperItem &item, const QSize &size, QObject *parent)
     : QObject(parent)
@@ -26,17 +29,16 @@ void XmlPreviewGenerator::run()
         return;
     }
 
-    QPixmap *preview = nullptr;
+    QPixmap preview;
 
     if (!m_item.slideshow.data.empty() || QFile::exists(m_item.filename_dark)) {
-        // Slideshow mode
+        // Slideshow preview
         preview = generateSlideshowPreview();
     } else {
         preview = generateSinglePreview();
     }
 
-    if (!preview || preview->isNull()) {
-        delete preview;
+    if (preview.isNull()) {
         Q_EMIT failed(m_item);
         return;
     }
@@ -44,24 +46,30 @@ void XmlPreviewGenerator::run()
     Q_EMIT gotPreview(m_item, preview);
 }
 
-QPixmap *XmlPreviewGenerator::generateSinglePreview()
+QPixmap XmlPreviewGenerator::generateSinglePreview()
 {
-    QPixmap *pix = new QPixmap(m_item.filename);
+    QEventLoop loop;
+    QPixmap pixmap;
 
-    if (pix->isNull()) {
-        return pix;
-    }
+    const QUrl url = QUrl::fromLocalFile(m_item.filename);
+    const QStringList availablePlugins = KIO::PreviewJob::availablePlugins();
 
-    if (pix->width() > m_screenshotSize.width() * pix->devicePixelRatio() || pix->height() > m_screenshotSize.height() * pix->devicePixelRatio()) {
-        auto resizedPix = new QPixmap(pix->scaled(m_screenshotSize * pix->devicePixelRatio(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        delete pix;
-        return resizedPix;
-    }
+    KIO::PreviewJob *const job = KIO::filePreview(KFileItemList{KFileItem(url, QString(), 0)}, m_screenshotSize, &availablePlugins);
+    job->setIgnoreMaximumSize(true);
 
-    return pix;
+    loop.connect(job, &KIO::PreviewJob::gotPreview, this, [&](const KFileItem &item, const QPixmap &preview) {
+        Q_UNUSED(item)
+        pixmap = preview;
+        loop.quit();
+    });
+    loop.connect(job, &KIO::PreviewJob::failed, &loop, &QEventLoop::quit);
+
+    loop.exec();
+
+    return pixmap;
 }
 
-QPixmap *XmlPreviewGenerator::generateSlideshowPreview()
+QPixmap XmlPreviewGenerator::generateSlideshowPreview()
 {
     int staticCount = 0;
 
@@ -99,22 +107,23 @@ QPixmap *XmlPreviewGenerator::generateSlideshowPreview()
     }
 
     if (staticCount == 0) {
-        return nullptr;
+        return QPixmap();
     }
 
-    QPixmap *pix = new QPixmap(list.at(0).size());
-    pix->fill(Qt::black);
-    auto p = QScopedPointer(new QPainter(pix));
+    QPixmap pix(list.at(0).size());
+    pix.fill(Qt::transparent);
+    auto p = std::make_unique<QPainter>();
+    p->begin(&pix);
 
-    for (int i = 0; i < list.size(); i++) {
+    for (int i = 0; i < static_cast<int>(list.size()); i++) {
         const QImage &image = list.at(i);
 
         double start = i / static_cast<double>(list.size()), end = (i + 1) / static_cast<double>(list.size());
 
-        QPoint topLeft(round(start * image.width()), 0);
-        QPoint bottomRight(round(end * image.width()), image.height());
-        QPoint topLeft2(round(start * pix->width()), 0);
-        QPoint bottomRight2(round(end * pix->width()), pix->height());
+        QPoint topLeft(std::lround(start * image.width()), 0);
+        QPoint bottomRight(std::lround(end * image.width()), image.height());
+        QPoint topLeft2(std::lround(start * pix.width()), 0);
+        QPoint bottomRight2(std::lround(end * pix.width()), pix.height());
 
         p->drawImage(QRect(topLeft2, bottomRight2), image.copy(QRect(topLeft, bottomRight)));
     }

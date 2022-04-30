@@ -3,8 +3,8 @@
 <wallpapers>
     <wallpaper deleted="false">
         <name>Default Background (For test purpose, don't translate!)</name>
-        <filename>.light.jpg</filename>
-        <filename-dark>.dark.jpg</filename-dark>
+        <filename>.light.png</filename>
+        <filename-dark>.dark.png</filename-dark>
         <options>zoom</options>
         <shade_type>solid</shade_type>
         <pcolor>#51a2da</pcolor>
@@ -15,6 +15,18 @@
     <wallpaper deleted="false">
         <name>Time of Day (For test purpose, don't translate!)</name>
         <filename>timeofday.xml</filename>
+        <options>zoom</options>
+    </wallpaper>
+
+    <wallpaper deleted="false">
+        <name>Broken wallpaper 1 (For test purpose, don't translate!)</name>
+        <filename>thisisnotawallpaper.txt</filename>
+        <options>zoom</options>
+    </wallpaper>
+
+    <wallpaper deleted="false">
+        <name>Broken wallpaper 2 (For test purpose, don't translate!)</name>
+        <filename>thefiledoesnotexist.png</filename>
         <options>zoom</options>
     </wallpaper>
 </wallpapers>

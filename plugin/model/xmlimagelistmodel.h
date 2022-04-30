@@ -19,7 +19,7 @@ class XmlImageListModel : public AbstractImageListModel
     Q_OBJECT
 
 public:
-    explicit XmlImageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent = nullptr);
+    explicit XmlImageListModel(const QSize &targetSize, QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
@@ -39,13 +39,14 @@ public Q_SLOTS:
     QStringList addBackground(const QString &path) override;
     /**
      * @path URL string like image://gnome-wp-list/get?...
+     * @return a list that contains the XML file and the image file
      */
-    void removeBackground(const QString &path) override;
+    QStringList removeBackground(const QString &path) override;
 
 private Q_SLOTS:
-    void slotHandleXmlFound(const QList<WallpaperItem> &packages);
-    void slotHandleXmlPreview(const WallpaperItem &item, QPixmap *preview);
-    void slotHandleXmlPreviewFailed(const WallpaperItem &item);
+    void slotXmlFound(const QList<WallpaperItem> &packages);
+    void slotXmlFinderGotPreview(const WallpaperItem &item, const QPixmap &preview);
+    void slotXmlFinderFailed(const WallpaperItem &item);
 
 private:
     void asyncGetXmlPreview(const WallpaperItem &item, const QPersistentModelIndex &index) const;
@@ -53,6 +54,8 @@ private:
     QString getRealPath(const WallpaperItem &item) const;
 
     QList<WallpaperItem> m_data;
+
+    friend class XmlImageListModelTest;
 };
 
 #endif // XMLIMAGELISTMODEL_H

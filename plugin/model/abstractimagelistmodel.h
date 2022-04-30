@@ -10,19 +10,14 @@
 #include <QAbstractListModel>
 #include <QCache>
 #include <QSize>
-#include <QStandardPaths>
-
-#include <KDirWatch>
 
 #include "imageroles.h"
 
 class QPixmap;
 class KFileItem;
 
-static const QString s_localImageDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/wallpapers/");
-
 /**
- * @todo write docs
+ * Base class for image list model.
  */
 class AbstractImageListModel : public QAbstractListModel, public ImageRoles
 {
@@ -31,8 +26,7 @@ class AbstractImageListModel : public QAbstractListModel, public ImageRoles
     Q_PROPERTY(int count READ count NOTIFY countChanged)
 
 public:
-    explicit AbstractImageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent = nullptr);
-    ~AbstractImageListModel() override = default;
+    explicit AbstractImageListModel(const QSize &targetSize, QObject *parent = nullptr);
 
     QHash<int, QByteArray> roleNames() const override;
 
@@ -47,7 +41,10 @@ public:
 
 public Q_SLOTS:
     virtual QStringList addBackground(const QString &path) = 0;
-    virtual void removeBackground(const QString &path) = 0;
+    /**
+     * @return removed files that should be removed from \KDirWatch
+     */
+    virtual QStringList removeBackground(const QString &path) = 0;
 
     void slotTargetSizeChanged(const QSize &size);
 
@@ -74,7 +71,7 @@ protected:
     QStringList m_removableWallpapers;
     QStringList m_customPaths;
 
-    KDirWatch m_dirWatch;
+    friend class ImageProxyModel; // For m_removableWallpapers
 
 private Q_SLOTS:
     void slotHandleImageSizeFound(const QString &path, const QSize &size);

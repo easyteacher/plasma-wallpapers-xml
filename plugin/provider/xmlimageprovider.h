@@ -11,7 +11,7 @@
 #include <QThreadPool>
 
 /**
- * @todo write docs
+ * A custom image provider for XML wallpapers
  */
 class XmlImageProvider : public QQuickAsyncImageProvider
 {

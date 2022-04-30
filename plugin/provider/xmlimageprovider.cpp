@@ -10,8 +10,8 @@
 #include <QPainter>
 #include <QUrlQuery>
 
-#include "backend/xmlslideshowupdatetimer.h"
 #include "finder/xmlfinder.h"
+#include "xmlslideshowupdatetimer.h"
 
 class AsyncXmlImageResponseRunnable : public QObject, public QRunnable
 {
@@ -40,9 +40,6 @@ class AsyncXmlImageResponse : public QQuickImageResponse
     Q_OBJECT
 
 public:
-    /**
-     * @todo write docs
-     */
     explicit AsyncXmlImageResponse(const QString &path, const QSize &requestedSize, QThreadPool *pool);
 
     QQuickTextureFactory *textureFactory() const override;
@@ -80,7 +77,7 @@ void AsyncXmlImageResponseRunnable::run()
         path = filename_dark;
     }
 
-    if (path.endsWith(QLatin1String(".xml"), Qt::CaseInsensitive)) {
+    if (path.endsWith(QStringLiteral(".xml"), Qt::CaseInsensitive)) {
         const SlideshowData sData = XmlFinder::parseSlideshowXml(path, m_requestedSize);
 
         if (sData.data.empty()) {
@@ -92,15 +89,15 @@ void AsyncXmlImageResponseRunnable::run()
         const qint64 timeDiff = startTime.secsTo(QDateTime::currentDateTime());
 
         // Caculate cycle length
+        TimeList timeList;
         qint64 totalTime;
-        auto timeList = XmlSlideshowUpdateTimer::slideshowTimeList(sData, totalTime);
-        QString fallbackPath;
+        std::tie(timeList, totalTime) = XmlSlideshowUpdateTimer::slideshowTimeList(sData);
 
         if (totalTime > 0) {
             // Mod
-            qint64 modTime = timeDiff % totalTime;
+            const qint64 modTime = timeDiff % totalTime;
 
-            for (int i = 0; i < timeList.size(); i++) {
+            for (int i = 0; i < static_cast<int>(timeList.size()); i++) {
                 const auto &nextP = timeList.at(i);
 
                 if (nextP.second > modTime) {
@@ -129,20 +126,12 @@ void AsyncXmlImageResponseRunnable::run()
                     break;
                 }
             }
-        } else {
-            // Use the first static item if available
-            path = fallbackPath;
         }
     }
 
     QImage image(path);
 
-    if (image.isNull()) {
-        Q_EMIT done(image);
-        return;
-    }
-
-    if (m_requestedSize.isValid()) {
+    if (!image.isNull() && m_requestedSize.isValid()) {
         image = image.scaled(m_requestedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
 
@@ -158,7 +147,7 @@ void AsyncXmlImageResponseRunnable::blendImages(QImage &from, QImage &to, double
     from = from.convertToFormat(QImage::Format_ARGB32);
     to = to.convertToFormat(QImage::Format_ARGB32);
 
-    auto p = QScopedPointer(new QPainter);
+    auto p = std::make_unique<QPainter>();
 
     if (!p->begin(&from)) {
         return;

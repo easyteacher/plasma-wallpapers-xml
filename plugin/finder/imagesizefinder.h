@@ -1,5 +1,5 @@
 /*
-    SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
@@ -11,7 +11,7 @@
 #include <QRunnable>
 
 /**
- * @todo write docs
+ * A runnable that helps find the dimension of an image.
  */
 class ImageSizeFinder : public QObject, public QRunnable
 {

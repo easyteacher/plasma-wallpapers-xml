@@ -1,4 +1,5 @@
 /*
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
     SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
@@ -6,15 +7,11 @@
 
 #include "imagefinder.h"
 
-#include <QCollator>
 #include <QDir>
 #include <QImageReader>
-#include <QMimeDatabase>
-#include <QSet>
 
 #include "findsymlinktarget.h"
-
-static QStringList s_suffixes;
+#include "suffixcheck.h"
 
 ImageFinder::ImageFinder(const QStringList &paths, QObject *parent)
     : QObject(parent)
@@ -30,23 +27,26 @@ void ImageFinder::run()
     dir.setFilter(QDir::AllDirs | QDir::Files | QDir::Readable);
     dir.setNameFilters(suffixes());
 
+    const auto filterCondition = [](const QFileInfo &info) {
+        return info.baseName() != QLatin1String("screenshot") && !info.absoluteFilePath().contains(QLatin1String("contents/images/"));
+    };
     int i;
+
     for (i = 0; i < m_paths.size(); ++i) {
         const QString &path = m_paths.at(i);
         const QString target = findSymlinkTarget(path);
         const QFileInfo info(target);
 
-        if (!info.exists()) {
+        if (!info.exists() || !filterCondition(info)) {
+            // is in a package
             continue;
         }
 
-        if (info.isHidden() || info.baseName() == QLatin1String("screenshot") || target.contains(QLatin1String("contents/images"))) {
-            // is a package
-            continue;
-        }
+        if (info.isFile()) {
+            if (isAcceptableSuffix(info.suffix()) && !info.isSymLink()) {
+                images.append(target);
+            }
 
-        if (suffixes().contains(QStringLiteral("*.%1").arg(info.suffix().toLower())) && info.isFile()) {
-            images.append(target);
             continue;
         }
 
@@ -54,9 +54,12 @@ void ImageFinder::run()
         const QFileInfoList files = dir.entryInfoList();
 
         for (const QFileInfo &wp : files) {
-            if (QString t(findSymlinkTarget(wp));
-                wp.isFile() && !t.contains(QLatin1String("contents/images")) && wp.baseName() != QLatin1String("screenshot")) {
-                images.append(t);
+            const QString t = findSymlinkTarget(wp);
+
+            if (wp.isFile()) {
+                if (filterCondition(wp) && !wp.isSymLink()) {
+                    images.append(t);
+                }
             } else {
                 const QString name = wp.fileName();
 
@@ -73,45 +76,5 @@ void ImageFinder::run()
     images.removeAll(QString());
     images.removeDuplicates();
 
-    sort(images);
-
     Q_EMIT imageFound(images);
-}
-
-void ImageFinder::sort(QStringList &list) const
-{
-    QCollator collator;
-
-    // Make sure 2 comes before 10
-    collator.setNumericMode(true);
-    // Behave like Dolphin with natural sorting enabled
-    collator.setCaseSensitivity(Qt::CaseInsensitive);
-
-    const auto compare = [&collator](const QString &a, const QString &b) {
-        // Checking if less than zero makes ascending order (A-Z)
-        return collator.compare(a, b) < 0;
-    };
-
-    std::stable_sort(list.begin(), list.end(), compare);
-}
-
-QStringList suffixes()
-{
-    if (s_suffixes.isEmpty()) {
-        QSet<QString> suffixes;
-
-        QMimeDatabase db;
-        const auto supportedMimeTypes = QImageReader::supportedMimeTypes();
-        for (const QByteArray &mimeType : supportedMimeTypes) {
-            QMimeType mime(db.mimeTypeForName(mimeType));
-            const QStringList globPatterns = mime.globPatterns();
-            for (const QString &pattern : globPatterns) {
-                suffixes.insert(pattern);
-            }
-        }
-
-        s_suffixes = suffixes.values();
-    }
-
-    return s_suffixes;
 }

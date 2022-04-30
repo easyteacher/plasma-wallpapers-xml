@@ -10,6 +10,8 @@
 #include <QConcatenateTablesProxyModel>
 #include <QSize>
 
+#include <KDirWatch>
+
 #include "imageroles.h"
 
 class AbstractImageListModel;
@@ -18,7 +20,7 @@ class PackageListModel;
 class XmlImageListModel;
 
 /**
- * @todo write docs
+ * A proxy model that aggregates data from ImageListModel and PackageListModel.
  */
 class ImageProxyModel : public QConcatenateTablesProxyModel, public ImageRoles
 {
@@ -54,16 +56,30 @@ Q_SIGNALS:
 private Q_SLOTS:
     void slotHandleLoaded(AbstractImageListModel *model);
 
+    /**
+     * Slots to handle item changes in source models.
+     */
+    void slotSourceModelAboutToBeReset();
+    void slotSourceModelReset();
+
+    /**
+     * Slots to handle file change signals from KDirWatch
+     */
+    void slotDirWatchCreated(const QString &path);
+    void slotDirWatchDeleted(const QString &path);
+
 private:
     ImageListModel *m_imageModel;
     PackageListModel *m_packageModel;
     XmlImageListModel *m_xmlModel;
 
+    KDirWatch m_dirWatch;
+
     int m_loaded = 0;
 
     QStringList m_pendingAddition;
 
-    friend class ModelTest;
+    friend class ImageProxyModelTest;
 };
 
 #endif // IMAGEPROXYMODEL_H

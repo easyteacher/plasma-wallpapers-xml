@@ -38,9 +38,6 @@ class AsyncPackageImageResponse : public QQuickImageResponse
     Q_OBJECT
 
 public:
-    /**
-     * @todo write docs
-     */
     explicit AsyncPackageImageResponse(const QString &path, const QSize &requestedSize, QThreadPool *pool);
 
     QQuickTextureFactory *textureFactory() const override;

@@ -1,4 +1,5 @@
 /*
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
     SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
@@ -8,21 +9,19 @@
 
 #include <QDir>
 #include <QPixmap>
+#include <QStandardPaths>
 #include <QThreadPool>
 
 #include <KAboutData>
-#include <KConfigGroup>
-#include <KPackage/Package>
 #include <KPackage/PackageLoader>
-#include <KSharedConfig>
 
 #include "../finder/packagefinder.h"
+#include "../finder/suffixcheck.h"
 
-PackageListModel::PackageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent)
-    : AbstractImageListModel(customPaths, targetSize, parent)
+PackageListModel::PackageListModel(const QSize &targetSize, QObject *parent)
+    : AbstractImageListModel(targetSize, parent)
 {
     qRegisterMetaType<QList<KPackage::Package>>();
-    load(customPaths);
 }
 
 int PackageListModel::rowCount(const QModelIndex &parent) const
@@ -32,21 +31,19 @@ int PackageListModel::rowCount(const QModelIndex &parent) const
 
 QVariant PackageListModel::data(const QModelIndex &index, int role) const
 {
-    const int row = index.row();
-
-    if (!index.isValid() || row >= m_packages.size() || row < 0) {
+    if (!index.isValid()) {
         return QVariant();
     }
 
-    const KPackage::Package &b = m_packages.at(row);
+    const KPackage::Package &b = m_packages.at(index.row());
 
     if (!b.isValid()) {
-        return QVariant();
+        Q_UNREACHABLE(); // Should be already filtered out by the finder
     }
 
     switch (role) {
     case Qt::DisplayRole:
-        return packageDisplayName(b);
+        return PackageFinder::packageDisplayName(b);
 
     case ScreenshotRole: {
         const QString path = b.filePath("preferred");
@@ -63,8 +60,8 @@ QVariant PackageListModel::data(const QModelIndex &index, int role) const
     }
 
     case AuthorRole: {
-        if (!b.metadata().authors().isEmpty()) {
-            return b.metadata().authors().constFirst().name();
+        if (!b.metadata().authors().empty()) {
+            return b.metadata().authors().at(0).name();
         }
 
         return QString();
@@ -93,15 +90,14 @@ QVariant PackageListModel::data(const QModelIndex &index, int role) const
     case RemovableRole: {
         const QString path = b.path();
 
-        return path.startsWith(s_localImageDir) || m_removableWallpapers.contains(path);
+        return path.startsWith(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/wallpapers/"))
+            || m_removableWallpapers.contains(path);
     }
 
     case PendingDeletionRole:
         return m_pendingDeletion.value(b.path(), false);
-
-    default:
-        return QVariant();
     }
+    Q_UNREACHABLE();
 }
 
 bool PackageListModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -121,8 +117,14 @@ bool PackageListModel::setData(const QModelIndex &index, const QVariant &value, 
     return false;
 }
 
-int PackageListModel::indexOf(const QString &path) const
+int PackageListModel::indexOf(const QString &_path) const
 {
+    QString path = _path.endsWith(QDir::separator()) ? _path : _path + QDir::separator();
+
+    if (path.startsWith(QLatin1String("file://"))) {
+        path.remove(0, 7);
+    }
+
     const auto it = std::find_if(m_packages.cbegin(), m_packages.cend(), [&path](const KPackage::Package &p) {
         return path == p.path();
     });
@@ -136,23 +138,11 @@ int PackageListModel::indexOf(const QString &path) const
 
 void PackageListModel::load(const QStringList &customPaths)
 {
-    if (m_loading) {
+    if (m_loading || customPaths.empty()) {
         return;
     }
 
-    for (const auto &p : std::as_const(m_packages)) {
-        m_dirWatch.removeDir(p.path());
-    }
-
-    if (customPaths.empty()) {
-        KConfigGroup cfg = KConfigGroup(KSharedConfig::openConfig(QStringLiteral("plasmarc")), QStringLiteral("Wallpapers"));
-        m_customPaths = cfg.readEntry("usersWallpapers", QStringList{});
-
-        m_customPaths += QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, QStringLiteral("wallpapers/"), QStandardPaths::LocateDirectory);
-    } else {
-        m_customPaths = customPaths;
-    }
-
+    m_customPaths = customPaths;
     m_customPaths.removeDuplicates();
 
     PackageFinder *finder = new PackageFinder(m_customPaths, m_targetSize);
@@ -175,6 +165,16 @@ QStringList PackageListModel::addBackground(const QString &path)
         return {};
     }
 
+    // Check if there are any available images.
+    QDir imageDir(package.filePath("images"));
+    imageDir.setFilter(QDir::Files | QDir::Readable);
+    imageDir.setNameFilters(suffixes());
+
+    if (imageDir.entryInfoList().empty()) {
+        // This is an empty package. Skip it.
+        return {};
+    }
+
     PackageFinder::findPreferredImageInPackage(package, m_targetSize);
 
     beginInsertRows(QModelIndex(), 0, 0);
@@ -182,48 +182,45 @@ QStringList PackageListModel::addBackground(const QString &path)
     m_removableWallpapers.prepend(package.path());
     m_packages.prepend(package);
 
-    if (!m_dirWatch.contains(path)) {
-        m_dirWatch.addDir(path);
-    }
-
     endInsertRows();
 
     return {package.path()};
 }
 
-void PackageListModel::removeBackground(const QString &path)
+QStringList PackageListModel::removeBackground(const QString &_path)
 {
-    if (path.isEmpty()) {
-        return;
+    QStringList results;
+
+    if (_path.isEmpty()) {
+        return results;
     }
 
-    int idx = indexOf(path);
+    const QString path = _path.endsWith(QDir::separator()) ? _path : _path + QDir::separator();
+
+    const int idx = indexOf(path);
 
     if (idx < 0) {
-        return;
+        return results;
     }
 
     beginRemoveRows(QModelIndex(), idx, idx);
 
     m_pendingDeletion.remove(m_packages.at(idx).path());
     m_removableWallpapers.removeOne(m_packages.at(idx).path());
-    m_packages.removeAt(idx);
+    results.append(m_packages.takeAt(idx).path());
+
+    // Uninstall local package
+    if (path.startsWith(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/wallpapers/"))) {
+        QDir f(path);
+
+        if (f.exists()) {
+            f.removeRecursively();
+        }
+    }
 
     endRemoveRows();
 
-    // Uninstall local package
-    if (!path.startsWith(s_localImageDir)) {
-        return;
-    }
-
-    const QString packageName = path.split(QDir::separator(), Qt::SkipEmptyParts).constLast();
-
-    if (packageName == QLatin1String("wallpapers")) {
-        return;
-    }
-
-    KPackage::Package p = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Wallpaper/Images"));
-    p.uninstall(packageName, s_localImageDir);
+    return results;
 }
 
 void PackageListModel::slotHandlePackageFound(const QList<KPackage::Package> &packages)
@@ -232,11 +229,8 @@ void PackageListModel::slotHandlePackageFound(const QList<KPackage::Package> &pa
 
     m_packages = packages;
 
-    for (const auto &p : packages) {
-        if (!m_dirWatch.contains(p.path())) {
-            m_dirWatch.addDir(p.path());
-        }
-    }
+    m_imageCache.clear();
+    m_imageSizeCache.clear();
 
     endResetModel();
 

@@ -1,4 +1,5 @@
 /*
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
     SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
@@ -9,20 +10,17 @@
 #include <QFileInfo>
 #include <QPixmap>
 #include <QThreadPool>
+#include <QStandardPaths>
 #include <QUrl>
 
-#include <KConfigGroup>
-#include <KFileItem>
 #include <KIO/PreviewJob>
-#include <KSharedConfig>
 
 #include "../finder/imagefinder.h"
+#include "../finder/suffixcheck.h"
 
-ImageListModel::ImageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent)
-    : AbstractImageListModel(customPaths, targetSize, parent)
+ImageListModel::ImageListModel(const QSize &targetSize, QObject *parent)
+    : AbstractImageListModel(targetSize, parent)
 {
-    connect(&m_dirWatch, &KDirWatch::created, this, &ImageListModel::addBackground);
-    load(customPaths);
 }
 
 int ImageListModel::rowCount(const QModelIndex &parent) const
@@ -32,15 +30,15 @@ int ImageListModel::rowCount(const QModelIndex &parent) const
 
 QVariant ImageListModel::data(const QModelIndex &index, int role) const
 {
-    const int row = index.row();
-
-    if (!index.isValid() || row >= m_data.size() || row < 0) {
+    if (!index.isValid()) {
         return QVariant();
     }
 
+    const int row = index.row();
+
     switch (role) {
     case Qt::DisplayRole:
-        return QFileInfo(m_data.at(row)).fileName();
+        return QFileInfo(m_data.at(row)).completeBaseName();
 
     case ScreenshotRole: {
         QPixmap *cachedPreview = m_imageCache.object(m_data.at(row));
@@ -55,7 +53,7 @@ QVariant ImageListModel::data(const QModelIndex &index, int role) const
     }
 
     case AuthorRole:
-        // No author for single image file
+        // No author for an image file?
         return QString();
 
     case ResolutionRole: {
@@ -79,15 +77,14 @@ QVariant ImageListModel::data(const QModelIndex &index, int role) const
     case RemovableRole: {
         const QString &path = m_data.at(row);
 
-        return path.startsWith(s_localImageDir) || m_removableWallpapers.contains(path);
+        return path.startsWith(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/wallpapers/"))
+            || m_removableWallpapers.contains(path);
     }
 
     case PendingDeletionRole:
         return m_pendingDeletion.value(m_data.at(row), false);
-
-    default:
-        return QVariant();
     }
+    Q_UNREACHABLE();
 }
 
 bool ImageListModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -127,28 +124,11 @@ int ImageListModel::indexOf(const QString &_path) const
 
 void ImageListModel::load(const QStringList &customPaths)
 {
-    if (m_loading) {
+    if (m_loading || customPaths.empty()) {
         return;
     }
 
-    for (const auto &p : std::as_const(m_data)) {
-        m_dirWatch.removeFile(p);
-    }
-
-    for (const auto &p : std::as_const(m_customPaths)) {
-        m_dirWatch.removeDir(p);
-    }
-
-    if (customPaths.empty()) {
-        KConfigGroup cfg = KConfigGroup(KSharedConfig::openConfig(QStringLiteral("plasmarc")), QStringLiteral("Wallpapers"));
-        m_removableWallpapers = cfg.readEntry("usersWallpapers", QStringList{});
-
-        m_customPaths = m_removableWallpapers
-            + QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, QStringLiteral("wallpapers/"), QStandardPaths::LocateDirectory);
-    } else {
-        m_customPaths = customPaths;
-    }
-
+    m_customPaths = customPaths;
     m_customPaths.removeDuplicates();
 
     ImageFinder *finder = new ImageFinder(m_customPaths);
@@ -164,17 +144,8 @@ void ImageListModel::slotHandleImageFound(const QStringList &paths)
 
     m_data = paths;
 
-    for (const QString &p : paths) {
-        if (!m_dirWatch.contains(p)) {
-            m_dirWatch.addFile(p);
-        }
-    }
-
-    for (const QString &p : std::as_const(m_customPaths)) {
-        if (!m_dirWatch.contains(p) && QFileInfo(p).isDir()) {
-            m_dirWatch.addDir(p, KDirWatch::WatchFiles);
-        }
-    }
+    m_imageCache.clear();
+    m_imageSizeCache.clear();
 
     endResetModel();
 
@@ -188,8 +159,8 @@ QStringList ImageListModel::addBackground(const QString &path)
         return {};
     }
 
-    if (!suffixes().contains(QStringLiteral("*.%1").arg(QFileInfo(path).suffix()))) {
-        // Format not supported
+    if (QFileInfo info(path); info.isHidden() || !isAcceptableSuffix(info.suffix())) {
+        // Skip hidden files or Format not supported
         return {};
     }
 
@@ -198,43 +169,41 @@ QStringList ImageListModel::addBackground(const QString &path)
     m_data.prepend(path);
     m_removableWallpapers.prepend(path);
 
-    if (!m_dirWatch.contains(path)) {
-        m_dirWatch.addFile(path);
-    }
-
     endInsertRows();
 
     return {path};
 }
 
-void ImageListModel::removeBackground(const QString &path)
+QStringList ImageListModel::removeBackground(const QString &path)
 {
+    QStringList results;
+
     if (path.isEmpty()) {
-        return;
+        return results;
     }
 
     const int idx = indexOf(path);
 
     if (idx < 0) {
-        return;
+        return results;
     }
 
     beginRemoveRows(QModelIndex(), idx, idx);
 
     m_pendingDeletion.remove(m_data.at(idx));
     m_removableWallpapers.removeOne(m_data.at(idx));
-    m_data.removeAt(idx);
-
-    m_dirWatch.removeFile(path);
-
-    endRemoveRows();
+    results.append(m_data.takeAt(idx));
 
     // Remove local wallpaper
-    if (path.startsWith(s_localImageDir)) {
+    if (path.startsWith(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/wallpapers/"))) {
         QFile f(path);
 
         if (f.exists()) {
             f.remove();
         }
     }
+
+    endRemoveRows();
+
+    return results;
 }

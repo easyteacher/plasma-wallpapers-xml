@@ -1,4 +1,5 @@
 /*
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
     SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
@@ -9,21 +10,15 @@
 
 #include "abstractimagelistmodel.h"
 
-#include <QSet>
-
 /**
- * @todo write docs
+ * List images that do not belong to any KPackages.
  */
 class ImageListModel : public AbstractImageListModel
 {
     Q_OBJECT
 
 public:
-    /**
-     * Default constructor
-     */
-    explicit ImageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent = nullptr);
-    ~ImageListModel() override = default;
+    explicit ImageListModel(const QSize &targetSize, QObject *parent = nullptr);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
@@ -35,13 +30,15 @@ public:
 
 public Q_SLOTS:
     QStringList addBackground(const QString &path) override;
-    void removeBackground(const QString &path) override;
+    QStringList removeBackground(const QString &path) override;
 
 protected Q_SLOTS:
     void slotHandleImageFound(const QStringList &paths);
 
 private:
     QStringList m_data;
+
+    friend class ImageListModelTest;
 };
 
 #endif // IMAGELISTMODEL_H

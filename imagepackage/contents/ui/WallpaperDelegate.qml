@@ -7,7 +7,7 @@
 
 import QtQuick 2.0
 import QtQuick.Controls.Private 1.0
-import QtQuick.Controls 2.3 as QQC2
+import QtQuick.Controls 2.3 as QtControls2
 import QtGraphicalEffects 1.0
 
 import org.kde.plasma.core 2.0 as PlasmaCore
@@ -32,7 +32,7 @@ KCM.GridDelegate {
         Kirigami.Action {
             icon.name: "document-open-folder"
             tooltip: i18nd("plasma_wallpaper_org.kde.image", "Open Containing Folder")
-            onTriggered: root.imageModel.openContainingFolder(index)
+            onTriggered: imageModel.openContainingFolder(index)
         },
         Kirigami.Action {
             icon.name: "edit-undo"
@@ -43,12 +43,13 @@ KCM.GridDelegate {
         Kirigami.Action {
             icon.name: "edit-delete"
             tooltip: i18nd("plasma_wallpaper_org.kde.image", "Remove Wallpaper")
-            visible: model.removable && !model.pendingDeletion
+            visible: model.removable && !model.pendingDeletion && configDialog.currentWallpaper == "com.github.easyteacher.plasma.wallpapers.xml"
             onTriggered: {
                 model.pendingDeletion = true;
 
-                if (wallpapersGrid.currentIndex === index) {
-                    wallpapersGrid.currentIndex = (index + 1) % wallpapersGrid.rowCount();
+                if (wallpapersGrid.view.currentIndex === index) {
+                    const newIndex = (index + 1) % (imageModel.count - 1);
+                    wallpapersGrid.view.itemAtIndex(newIndex).clicked();
                 }
             }
         }
@@ -106,9 +107,8 @@ KCM.GridDelegate {
                 return QPixmapItem.PreserveAspectFit;
             }
         }
-
-        QQC2.CheckBox {
-            visible: configDialog.currentWallpaper === "com.github.easyteacher.plasma.wallpapers.xml.slideshow"
+        QtControls2.CheckBox {
+            visible: configDialog.currentWallpaper == "com.github.easyteacher.plasma.wallpapers.xml.slideshow"
             anchors.right: parent.right
             anchors.top: parent.top
             checked: visible ? model.checked : false
@@ -117,7 +117,9 @@ KCM.GridDelegate {
     }
 
     onClicked: {
-        cfg_Image = model.packageName || model.path;
+        if (configDialog.currentWallpaper == "com.github.easyteacher.plasma.wallpapers.xml") {
+            cfg_Image = model.packageName || model.path;
+        }
         GridView.currentIndex = index;
     }
 }

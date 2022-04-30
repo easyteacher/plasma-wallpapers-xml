@@ -67,7 +67,7 @@ struct SlideshowData {
     QList<SlideshowItemData> data;
 };
 
-/**
+/*
    Wallpaper list format:
     <?xml version="1.0"?>
     <!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
@@ -99,7 +99,7 @@ struct WallpaperItem {
 Q_DECLARE_METATYPE(WallpaperItem)
 
 /**
- * @todo write docs
+ * A runnable that finds XML wallpapers.
  */
 class XmlFinder : public QObject, public QRunnable
 {
@@ -113,7 +113,10 @@ public:
     static void sort(QList<WallpaperItem> &list);
     static QList<WallpaperItem> parseXml(const QString &path, const QSize &targetSize);
     static SlideshowData parseSlideshowXml(const QString &path, const QSize &targetSize);
+
     static QUrl convertToUrl(const WallpaperItem &item);
+    static QStringList convertToPaths(const QUrl &url);
+
     static QString findPreferredImage(const QStringList &sizeList, const QSize &targetSize);
 
 Q_SIGNALS:

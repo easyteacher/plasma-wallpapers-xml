@@ -14,11 +14,10 @@
 
 #include "../finder/imagesizefinder.h"
 
-AbstractImageListModel::AbstractImageListModel(const QStringList &customPaths, const QSize &targetSize, QObject *parent)
+AbstractImageListModel::AbstractImageListModel(const QSize &targetSize, QObject *parent)
     : QAbstractListModel(parent)
     , m_screenshotSize(targetSize / 8)
     , m_targetSize(targetSize)
-    , m_customPaths(customPaths)
 {
     m_imageCache.setMaxCost(m_screenshotSize.width() * m_screenshotSize.height() * 20);
     m_imageSizeCache.setMaxCost(20);
@@ -26,8 +25,6 @@ AbstractImageListModel::AbstractImageListModel(const QStringList &customPaths, c
     connect(this, &QAbstractListModel::rowsInserted, this, &AbstractImageListModel::countChanged);
     connect(this, &QAbstractListModel::rowsRemoved, this, &AbstractImageListModel::countChanged);
     connect(this, &QAbstractListModel::modelReset, this, &AbstractImageListModel::countChanged);
-
-    connect(&m_dirWatch, &KDirWatch::deleted, this, &AbstractImageListModel::removeBackground);
 }
 
 QHash<int, QByteArray> AbstractImageListModel::roleNames() const

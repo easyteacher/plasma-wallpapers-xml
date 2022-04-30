@@ -13,6 +13,7 @@
 
 #include "distance.h"
 #include "findsymlinktarget.h"
+#include "suffixcheck.h"
 
 XmlFinder::XmlFinder(const QStringList &paths, const QSize &targetSize, QObject *parent)
     : QObject(parent)
@@ -29,22 +30,25 @@ void XmlFinder::run()
     dir.setFilter(QDir::AllDirs | QDir::Files | QDir::Readable);
     dir.setNameFilters({QStringLiteral("*.xml")});
 
-    int i;
-    for (i = 0; i < m_paths.size(); ++i) {
+    // m_paths is mutable
+    int i = 0;
+    while (i < m_paths.size()) {
         const QString &path = m_paths.at(i);
 
-        if (QUrl url(path); url.scheme() == QLatin1String("image") && url.host() == QLatin1String("gnome-wp-list")) {
-            QUrlQuery urlQuery(url);
+        // Read saved links from the configuration
+        if (QUrl url(path); url.scheme() == QStringLiteral("image") && url.host() == QStringLiteral("gnome-wp-list")) {
+            const QUrlQuery urlQuery(url);
             const QString root = urlQuery.queryItemValue(QStringLiteral("_root"));
 
-            if (root.endsWith(QLatin1String(".xml"))) {
+            if (QFileInfo info(root); info.suffix().toLower() == QStringLiteral("xml") && info.isFile() && !info.isHidden()) {
                 xmls.append(root);
             }
 
             continue;
         }
 
-        if (QFileInfo info(path); path.endsWith(QLatin1String(".xml"), Qt::CaseInsensitive) && info.isFile()) {
+        // Is an xml file
+        if (QFileInfo info(path); path.endsWith(QStringLiteral(".xml"), Qt::CaseInsensitive) && info.isFile()) {
             xmls.append(findSymlinkTarget(info));
             continue;
         }
@@ -66,6 +70,8 @@ void XmlFinder::run()
                 m_paths.append(wp.filePath());
             }
         }
+
+        ++i;
     }
 
     xmls.removeDuplicates();
@@ -73,11 +79,7 @@ void XmlFinder::run()
     QList<WallpaperItem> packages;
 
     for (const QString &path : std::as_const(xmls)) {
-        if (QFileInfo(path).isHidden()) {
-            continue;
-        }
-
-        packages += parseXml(path, m_targetSize);
+        packages << parseXml(path, m_targetSize);
     }
 
     sort(packages);
@@ -116,16 +118,22 @@ QList<WallpaperItem> XmlFinder::parseXml(const QString &path, const QSize &targe
     while (!xml.atEnd()) {
         xml.readNext();
 
-        if (xml.isStartElement() && xml.name() == QLatin1String("wallpaper")) {
+        if (xml.isStartElement() && xml.name() == QStringLiteral("wallpaper")) {
             WallpaperItem item;
 
             while (!xml.atEnd()) {
                 xml.readNext();
 
                 if (xml.isEndElement()) {
-                    if (xml.name() == QLatin1String("wallpaper")) {
+                    if (xml.name() == QStringLiteral("wallpaper")) {
+                        const QFileInfo info(item.filename);
+                        // Check is acceptable suffix
+                        if (!info.isFile() || !(info.suffix().toLower() == QStringLiteral("xml") || isAcceptableSuffix(info.suffix()))) {
+                            break;
+                        }
+
                         if (item.name.isEmpty()) {
-                            item.name = QFileInfo(item.filename).baseName();
+                            item.name = info.baseName();
                         }
 
                         item._root = path;
@@ -138,26 +146,26 @@ QList<WallpaperItem> XmlFinder::parseXml(const QString &path, const QSize &targe
                     }
                 }
 
-                if (xml.name() == QLatin1String("name")) {
+                if (xml.name() == QStringLiteral("name")) {
                     /* no pictures available for the specified parameters */
                     item.name = xml.readElementText();
-                } else if (xml.name() == QLatin1String("filename")) {
+                } else if (xml.name() == QStringLiteral("filename")) {
                     item.filename = xml.readElementText();
 
                     if (QFileInfo(item.filename).isRelative()) {
                         item.filename = QFileInfo(path).absoluteDir().absoluteFilePath(item.filename);
                     }
 
-                    if (item.filename.endsWith(QLatin1String(".xml"), Qt::CaseInsensitive)) {
+                    if (item.filename.endsWith(QStringLiteral(".xml"), Qt::CaseInsensitive)) {
                         item.slideshow = parseSlideshowXml(item.filename, targetSize);
                     }
-                } else if (xml.name() == QLatin1String("filename-dark")) {
+                } else if (xml.name() == QStringLiteral("filename-dark")) {
                     item.filename_dark = xml.readElementText();
 
                     if (QFileInfo(item.filename_dark).isRelative()) {
                         item.filename_dark = QFileInfo(path).absoluteDir().absoluteFilePath(item.filename_dark);
                     }
-                } else if (xml.name() == QLatin1String("author")) {
+                } else if (xml.name() == QStringLiteral("author")) {
                     item.author = xml.readElementText();
                 }
             }
@@ -188,7 +196,7 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
             continue;
         }
 
-        if (xml.isStartElement() && xml.name() == QLatin1String("background")) {
+        if (xml.isStartElement() && xml.name() == QStringLiteral("background")) {
             while (!xml.atEnd()) { // background
                 token = xml.readNext();
 
@@ -197,7 +205,7 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                 }
 
                 if (xml.isEndElement()) {
-                    if (xml.name() == QLatin1String("background")) {
+                    if (xml.name() == QStringLiteral("background")) {
                         break;
                     } else {
                         continue;
@@ -205,7 +213,7 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                 }
 
                 if (xml.isStartElement()) {
-                    if (xml.name() == QLatin1String("starttime")) {
+                    if (xml.name() == QStringLiteral("starttime")) {
                         int year = QDate::currentDate().year(), month = QDate::currentDate().month(), day = QDate::currentDate().day();
                         int seconds = 0;
 
@@ -217,7 +225,7 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                             }
 
                             if (xml.isEndElement()) {
-                                if (xml.name() == QLatin1String("starttime")) {
+                                if (xml.name() == QStringLiteral("starttime")) {
                                     data.starttime.setDate(QDate(year, month, day));
                                     data.starttime = data.starttime.addSecs(seconds);
                                     break; // starttime
@@ -226,21 +234,21 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                                 }
                             }
 
-                            if (xml.name() == QLatin1String("year")) {
+                            if (xml.name() == QStringLiteral("year")) {
                                 year = std::max(0, xml.readElementText().toInt());
-                            } else if (xml.name() == QLatin1String("month")) {
+                            } else if (xml.name() == QStringLiteral("month")) {
                                 month = std::clamp(xml.readElementText().toInt(), 1, 12);
-                            } else if (xml.name() == QLatin1String("day")) {
+                            } else if (xml.name() == QStringLiteral("day")) {
                                 day = std::clamp(xml.readElementText().toInt(), 1, 31);
-                            } else if (xml.name() == QLatin1String("hour")) {
+                            } else if (xml.name() == QStringLiteral("hour")) {
                                 seconds += xml.readElementText().toInt() * 3600;
-                            } else if (xml.name() == QLatin1String("minute")) {
+                            } else if (xml.name() == QStringLiteral("minute")) {
                                 seconds += xml.readElementText().toInt() * 60;
-                            } else if (xml.name() == QLatin1String("second")) {
+                            } else if (xml.name() == QStringLiteral("second")) {
                                 seconds += xml.readElementText().toInt();
                             }
                         }
-                    } else if (xml.name() == QLatin1String("static")) {
+                    } else if (xml.name() == QStringLiteral("static")) {
                         SlideshowItemData sdata;
                         sdata.dataType = 0;
 
@@ -252,7 +260,7 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                             }
 
                             if (xml.isEndElement()) {
-                                if (xml.name() == QLatin1String("static")) {
+                                if (xml.name() == QStringLiteral("static")) {
                                     if (!sdata.file.isEmpty()) {
                                         data.data.append(sdata);
                                     }
@@ -262,13 +270,13 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                                 }
                             }
 
-                            if (xml.name() == QLatin1String("duration")) {
+                            if (xml.name() == QStringLiteral("duration")) {
                                 sdata.duration = xml.readElementText().toDouble();
-                            } else if (xml.name() == QLatin1String("file")) {
+                            } else if (xml.name() == QStringLiteral("file")) {
                                 const QStringList results = xml.readElementText(QXmlStreamReader::IncludeChildElements).simplified().split(' ');
 
                                 if (results.size() == 1) {
-                                    sdata.file = results.constFirst();
+                                    sdata.file = results.at(0);
                                 } else {
                                     sdata.file = findPreferredImage(results, targetSize);
                                 }
@@ -278,12 +286,12 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                                 }
                             }
                         }
-                    } else if (xml.name() == QLatin1String("transition")) {
+                    } else if (xml.name() == QStringLiteral("transition")) {
                         SlideshowItemData tdata;
                         tdata.dataType = 1;
 
-                        if (auto attr = xml.attributes(); attr.hasAttribute(QLatin1String("type"))) {
-                            tdata.type = attr.value(QLatin1String("type")).toString();
+                        if (auto attr = xml.attributes(); attr.hasAttribute(QStringLiteral("type"))) {
+                            tdata.type = attr.value(QStringLiteral("type")).toString();
                         }
 
                         while (!xml.atEnd()) { // static
@@ -294,7 +302,7 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                             }
 
                             if (xml.isEndElement()) {
-                                if (xml.name() == QLatin1String("transition")) {
+                                if (xml.name() == QStringLiteral("transition")) {
                                     if (!tdata.from.isEmpty() && !tdata.to.isEmpty()) {
                                         data.data.append(tdata);
                                     }
@@ -304,15 +312,15 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                                 }
                             }
 
-                            if (xml.name() == QLatin1String("duration")) {
+                            if (xml.name() == QStringLiteral("duration")) {
                                 tdata.duration = xml.readElementText().toDouble();
-                            } else if (xml.name() == QLatin1String("from")) {
+                            } else if (xml.name() == QStringLiteral("from")) {
                                 tdata.from = xml.readElementText();
 
                                 if (QFileInfo(tdata.from).isRelative()) {
                                     tdata.from = QFileInfo(path).absoluteDir().absoluteFilePath(tdata.from);
                                 }
-                            } else if (xml.name() == QLatin1String("to")) {
+                            } else if (xml.name() == QStringLiteral("to")) {
                                 tdata.to = xml.readElementText();
 
                                 if (QFileInfo(tdata.to).isRelative()) {
@@ -325,7 +333,7 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
             }
         }
 
-        if (xml.isEndElement() && xml.name() == QLatin1String("background")) {
+        if (xml.isEndElement() && xml.name() == QStringLiteral("background")) {
             break;
         }
     }
@@ -344,23 +352,36 @@ QUrl XmlFinder::convertToUrl(const WallpaperItem &item)
     urlQuery.addQueryItem(QStringLiteral("name"), item.name);
     urlQuery.addQueryItem(QStringLiteral("author"), item.author);
 
-    // Parse slideshow data if filename is an xml file, no need to save them in the url.
-
+    // Parse slideshow data if the file is an xml file, no need to save them in the url.
     url.setQuery(urlQuery);
 
     return url;
 }
 
-QString XmlFinder::findPreferredImage(const QStringList &pathList, const QSize &targetSize)
+QStringList XmlFinder::convertToPaths(const QUrl &url)
+{
+    if (url.scheme() != QStringLiteral("image") || url.host() != QStringLiteral("gnome-wp-list")) {
+        return {};
+    }
+
+    const QUrlQuery urlQuery(url);
+
+    const QString rootPath(urlQuery.queryItemValue(QStringLiteral("_root")));
+    const QString filename(urlQuery.queryItemValue(QStringLiteral("filename")));
+
+    return {rootPath, filename};
+}
+
+QString XmlFinder::findPreferredImage(const QStringList &pathList, const QSize &_targetSize)
 {
     if (pathList.empty()) {
         return QString();
     }
 
-    QSize tSize = targetSize;
+    QSize targetSize = _targetSize;
 
-    if (tSize.isEmpty()) {
-        tSize = QSize(1920, 1080);
+    if (targetSize.isEmpty()) {
+        targetSize = QSize(1920, 1080);
     }
 
     QString preferred;
@@ -374,7 +395,7 @@ QString XmlFinder::findPreferredImage(const QStringList &pathList, const QSize &
             continue;
         }
 
-        float dist = distance(candidate, tSize);
+        float dist = distance(candidate, targetSize);
 
         if (preferred.isEmpty() || dist < best) {
             preferred = p;

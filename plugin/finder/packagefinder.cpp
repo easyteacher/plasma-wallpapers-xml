@@ -1,11 +1,12 @@
 /*
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
     SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
+
 #include "packagefinder.h"
 
-#include <QCollator>
 #include <QDir>
 
 #include <KLocalizedString>
@@ -13,6 +14,7 @@
 
 #include "distance.h"
 #include "findsymlinktarget.h"
+#include "suffixcheck.h"
 
 PackageFinder::PackageFinder(const QStringList &paths, const QSize &targetSize, QObject *parent)
     : QObject(parent)
@@ -27,11 +29,49 @@ void PackageFinder::run()
     QStringList folders;
 
     QDir dir;
-    dir.setFilter(QDir::AllDirs | QDir::Readable);
+    dir.setFilter(QDir::Dirs | QDir::Readable);
+
     KPackage::Package package = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Wallpaper/Images"));
 
+    const auto addPackage = [this, &package, &packages, &folders](const QString &_folderPath) {
+        const QString folderPath = _folderPath.endsWith(QDir::separator()) ? _folderPath : _folderPath + QDir::separator();
+
+        if (folders.contains(folderPath)) {
+            // The folder has been added, return true to skip it.
+            return true;
+        }
+
+        if (!QFile::exists(folderPath + QLatin1String("/metadata.desktop")) && !QFile::exists(folderPath + QLatin1String("/metadata.json"))) {
+            return false;
+        }
+
+        package.setPath(folderPath);
+
+        if (package.isValid() && package.metadata().isValid()) {
+            // Check if there are any available images.
+            QDir imageDir(package.filePath("images"));
+            imageDir.setFilter(QDir::Files | QDir::Readable);
+            imageDir.setNameFilters(suffixes());
+
+            if (imageDir.entryInfoList().empty()) {
+                // This is an empty package. Skip it.
+                folders << folderPath;
+                return true;
+            }
+
+            findPreferredImageInPackage(package, m_targetSize);
+            packages << package;
+            folders << folderPath;
+
+            return true;
+        }
+
+        return false; // Not found
+    };
+
     int i;
-    for (i = 0; i < m_paths.count(); ++i) {
+
+    for (i = 0; i < m_paths.size(); ++i) {
         const QString &path = m_paths.at(i);
         const QFileInfo info(path);
 
@@ -39,67 +79,34 @@ void PackageFinder::run()
             continue;
         }
 
+        // Check the path itself is a package
+        if (addPackage(path)) {
+            continue;
+        }
+
         dir.setPath(path);
         const QFileInfoList files = dir.entryInfoList();
 
         for (const QFileInfo &wp : files) {
-            if (wp.isFile()) {
-                // Package is inside a directory
-                continue;
-            }
-
-            const QString name = wp.fileName();
-
-            if (name.startsWith('.')) {
-                continue;
-            }
-
             const QString folderPath = findSymlinkTarget(wp);
 
-            if (folders.contains(folderPath)) {
+            if (wp.fileName().startsWith('.')) {
                 continue;
             }
 
-            if (QFile::exists(folderPath + QLatin1String("/metadata.desktop")) || QFile::exists(folderPath + QLatin1String("/metadata.json"))) {
-                package.setPath(folderPath);
-
-                if (package.isValid() && package.metadata().isValid() && !QDir(package.filePath("images")).isEmpty()) {
-                    findPreferredImageInPackage(package, m_targetSize);
-                    packages << package;
-                    folders << folderPath;
-                }
-
-                continue;
+            if (!addPackage(folderPath)) {
+                // Add this to the directories we should be looking at
+                m_paths.append(folderPath);
             }
-
-            // add this to the directories we should be looking at
-            m_paths.append(folderPath);
         }
     }
 
     Q_EMIT packageFound(packages);
 }
 
-void PackageFinder::sort(QList<KPackage::Package> &list) const
-{
-    QCollator collator;
-
-    // Make sure 2 comes before 10
-    collator.setNumericMode(true);
-    // Behave like Dolphin with natural sorting enabled
-    collator.setCaseSensitivity(Qt::CaseInsensitive);
-
-    const auto compare = [&collator](const KPackage::Package &a, const KPackage::Package &b) {
-        // Checking if less than zero makes ascending order (A-Z)
-        return collator.compare(packageDisplayName(a), packageDisplayName(b)) < 0;
-    };
-
-    std::stable_sort(list.begin(), list.end(), compare);
-}
-
 void PackageFinder::findPreferredImageInPackage(KPackage::Package &package, const QSize &targetSize)
 {
-    if (!package.isValid() || !package.filePath("preferred").isEmpty()) {
+    if (!package.isValid()) {
         return;
     }
 
@@ -123,11 +130,11 @@ void PackageFinder::findPreferredImageInPackage(KPackage::Package &package, cons
         for (const QString &entry : images) {
             QSize candidate = resSize(QFileInfo(entry).baseName());
 
-            if (candidate == QSize()) {
+            if (candidate.isEmpty()) {
                 continue;
             }
 
-            float dist = distance(candidate, tSize);
+            const float dist = distance(candidate, tSize);
 
             if (preferred.isEmpty() || dist < best) {
                 preferred = entry;
@@ -140,9 +147,9 @@ void PackageFinder::findPreferredImageInPackage(KPackage::Package &package, cons
     package.addFileDefinition("preferred", QStringLiteral("images/") + preferred, i18n("Recommended wallpaper file"));
 }
 
-QString packageDisplayName(const KPackage::Package &b)
+QString PackageFinder::packageDisplayName(const KPackage::Package &b)
 {
-    QString title = b.metadata().isValid() ? b.metadata().name() : QString();
+    const QString title = b.metadata().name();
 
     if (title.isEmpty()) {
         return QFileInfo(b.filePath("preferred")).completeBaseName();

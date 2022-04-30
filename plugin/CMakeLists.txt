@@ -1,41 +1,57 @@
 set(image_SRCS
-    imageplugin.cpp
-    backend/imagebackend.cpp
-    backend/slideshowbackend.cpp
-    backend/xmlslideshowupdatetimer.cpp
-    finder/imagefinder.cpp
-    finder/xmlfinder.cpp
-    finder/packagefinder.cpp
+    imagebackend.cpp
+    slidemodel.cpp
+    slidefiltermodel.cpp
+    sortingmode.h
+    xmlslideshowupdatetimer.cpp
+    clockskewnotifier/clockskewnotifierengine.cpp
     finder/imagesizefinder.cpp
+    finder/distance.cpp
+    finder/findsymlinktarget.h
+    finder/imagefinder.cpp
+    finder/suffixcheck.cpp
+    finder/packagefinder.cpp
+    finder/xmlfinder.cpp
     model/abstractimagelistmodel.cpp
-    model/imagelistmodel.cpp
+    model/imageroles.h
     model/packagelistmodel.cpp
+    model/imagelistmodel.cpp
+    model/imageproxymodel.cpp
     model/xmlimagelistmodel.cpp
     model/xmlpreviewgenerator.cpp
-    model/imageproxymodel.cpp
-    model/slidemodel.cpp
-    model/sortingmode.h
-    model/slidefiltermodel.cpp
-    provider/xmlimageprovider.cpp
     provider/packageimageprovider.cpp
+    provider/xmlimageprovider.cpp
 )
 
-add_library(plasma_wallpaper_imageplugin SHARED ${image_SRCS})
+ecm_qt_declare_logging_category(image_SRCS HEADER debug.h
+                                           IDENTIFIER IMAGEWALLPAPER
+                                           CATEGORY_NAME kde.wallpapers.image
+                                           DEFAULT_SEVERITY Info)
 
-target_link_libraries(plasma_wallpaper_imageplugin
+add_library(plasma_wallpaper_imageplugin_static STATIC)
+target_sources(plasma_wallpaper_imageplugin_static PRIVATE ${image_SRCS})
+
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    target_sources(plasma_wallpaper_imageplugin_static PRIVATE clockskewnotifier/clockskewnotifierengine_linux.cpp)
+endif()
+
+target_link_libraries(plasma_wallpaper_imageplugin_static
     Qt::Core
-    Qt::Gui
     Qt::Quick
     Qt::Qml
-    KF5::ConfigCore
-    KF5::CoreAddons
+    KF5::Plasma
+    KF5::KIOCore
+    KF5::KIOWidgets
     KF5::I18n
     KF5::KIOCore
-    KF5::KIOFileWidgets
+    KF5::KIOGui
+    KF5::NewStuff
     KF5::Notifications
-    KF5::Package
-    KF5::Plasma # Plasma::Theme
-    KF5::Solid
+    )
+
+add_library(plasma_wallpaper_imageplugin SHARED imageplugin.cpp)
+target_link_libraries(plasma_wallpaper_imageplugin
+    plasma_wallpaper_imageplugin_static
 )
 
 if(BUILD_TESTING)

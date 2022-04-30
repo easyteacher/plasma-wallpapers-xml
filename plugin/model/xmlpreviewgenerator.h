@@ -12,7 +12,7 @@
 #include "../finder/xmlfinder.h"
 
 /**
- * @todo write docs
+ * A runnable that generates image previews for XML wallpapers
  */
 class XmlPreviewGenerator : public QObject, public QRunnable
 {
@@ -24,12 +24,12 @@ public:
     void run() override;
 
 Q_SIGNALS:
-    void gotPreview(const WallpaperItem &item, QPixmap *preview);
+    void gotPreview(const WallpaperItem &item, const QPixmap &preview);
     void failed(const WallpaperItem &item);
 
 private:
-    QPixmap *generateSinglePreview();
-    QPixmap *generateSlideshowPreview();
+    QPixmap generateSinglePreview();
+    QPixmap generateSlideshowPreview();
 
     WallpaperItem m_item;
     QSize m_screenshotSize;

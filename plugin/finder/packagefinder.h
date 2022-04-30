@@ -1,4 +1,5 @@
 /*
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
     SPDX-FileCopyrightText: 2022 Fushan Wen <qydwhotmail@gmail.com>
 
     SPDX-License-Identifier: GPL-2.0-or-later
@@ -13,10 +14,8 @@
 
 #include <KPackage/Package>
 
-QString packageDisplayName(const KPackage::Package &b);
-
 /**
- * @todo write docs
+ * A runnable that finds KPackage wallpapers.
  */
 class PackageFinder : public QObject, public QRunnable
 {
@@ -28,13 +27,12 @@ public:
     void run() override;
 
     static void findPreferredImageInPackage(KPackage::Package &package, const QSize &targetSize);
+    static QString packageDisplayName(const KPackage::Package &b);
 
 Q_SIGNALS:
     void packageFound(const QList<KPackage::Package> &packages);
 
 private:
-    void sort(QList<KPackage::Package> &list) const;
-
     QStringList m_paths;
     QSize m_targetSize;
 };
