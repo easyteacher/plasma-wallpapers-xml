@@ -21,7 +21,6 @@ BuildRequires:  cmake(KF5NewStuff)
 BuildRequires:  cmake(KF5Notifications)
 BuildRequires:  cmake(KF5Package)
 BuildRequires:  cmake(KF5Plasma)
-BuildRequires:  cmake(KF5Solid)
 BuildRequires:  cmake(Qt5Core) >= 5.15.0
 BuildRequires:  cmake(Qt5Qml) >= 5.15.0
 BuildRequires:  cmake(Qt5Quick) >= 5.15.0
