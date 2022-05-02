@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.16.0)
 
 project(plasma-wallpapers-xml)
 set(PROJECT_VERSION "1.1.0")
@@ -25,9 +25,6 @@ include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(ECMQMLModules)
 include(ECMQtDeclareLoggingCategory)
-
-ecm_find_qmlmodule(QtQuick 2.0)
-ecm_find_qmlmodule(org.kde.kquickcontrolsaddons 2.0)
 
 find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
     Config
