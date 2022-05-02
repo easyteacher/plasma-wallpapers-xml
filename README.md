@@ -35,7 +35,7 @@ dnf copr enable fusionfuture/plasma-wallpapers-xml
 dnf install plasma-wallpapers-xml
 ```
 
-### Arch Linux
+### Arch / Manjaro Linux
 
 ```shell
 yay -S plasma5-wallpapers-xml
@@ -43,12 +43,19 @@ yay -S plasma5-wallpapers-xml
 
 Or you can use the prebuilt package:
 
-1. Edit /etc/pacman.conf and add the following:
+1. Edit /etc/pacman.conf and add the following lines to the end of the file:
 
 ```
 [home_fusionfuture_plasma-wallpapers_Arch]
+SigLevel = Optional TrustAll
 Server = https://download.opensuse.org/repositories/home:/fusionfuture:/plasma-wallpapers/Arch/$arch
 ```
 
-2. Run `pacman -Syu`
-3. Run `pacman -S plasma5-wallpapers-xml`
+2. Import the PGP key and install the package
+
+```shell
+wget -O /tmp/home_fusionfuture_plasma-wallpapers_Arch.key "https://download.opensuse.org/repositories/home:/fusionfuture:/plasma-wallpapers/Arch/x86_64/home_fusionfuture_plasma-wallpapers_Arch.key"
+pacman-key --add /tmp/home_fusionfuture_plasma-wallpapers_Arch.key
+pacman -Sy
+pacman -S plasma5-wallpapers-xml
+```
