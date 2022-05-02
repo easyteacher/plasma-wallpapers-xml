@@ -34,3 +34,21 @@ zypper install plasma-wallpapers-xml
 dnf copr enable fusionfuture/plasma-wallpapers-xml
 dnf install plasma-wallpapers-xml
 ```
+
+### Arch Linux
+
+```shell
+yay -S plasma5-wallpapers-xml
+```
+
+Or you can use the prebuilt package:
+
+1. Edit /etc/pacman.conf and add the following:
+
+```
+[home_fusionfuture_plasma-wallpapers_Arch]
+Server = https://download.opensuse.org/repositories/home:/fusionfuture:/plasma-wallpapers/Arch/$arch
+```
+
+2. Run `pacman -Syu`
+3. Run `pacman -S plasma5-wallpapers-xml`
