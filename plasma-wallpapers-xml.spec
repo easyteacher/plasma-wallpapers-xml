@@ -25,6 +25,8 @@ BuildRequires:  cmake(Qt5Core) >= 5.15.0
 BuildRequires:  cmake(Qt5Qml) >= 5.15.0
 BuildRequires:  cmake(Qt5Quick) >= 5.15.0
 
+Suggests:       gnome-backgrounds
+
 %description
 A image wallpaper plugin for KDE Plasma that supports GNOME XML wallpaper format.
 
