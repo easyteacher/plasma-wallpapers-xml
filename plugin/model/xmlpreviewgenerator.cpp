@@ -113,7 +113,10 @@ QPixmap XmlPreviewGenerator::generateSlideshowPreview()
     QPixmap pix(list.at(0).size());
     pix.fill(Qt::transparent);
     auto p = std::make_unique<QPainter>();
-    p->begin(&pix);
+
+    if (!p->begin(&pix)) {
+        return pix;
+    }
 
     for (int i = 0; i < static_cast<int>(list.size()); i++) {
         const QImage &image = list.at(i);
