@@ -28,7 +28,7 @@ zypper install plasma-wallpapers-xml
 ```
 
 
-### Fedora/CentOS 9+
+### Fedora 35+
 
 ```shell
 dnf copr enable fusionfuture/plasma-wallpapers-xml
