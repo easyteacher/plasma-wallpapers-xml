@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16.0)
 
 project(plasma-wallpapers-xml)
-set(PROJECT_VERSION "1.1.0")
+set(PROJECT_VERSION "1.2.0")
 set(PROJECT_VERSION_MAJOR 1)
 
-set(KF5_MIN_VERSION "5.66.0")
+set(KF5_MIN_VERSION "5.90.0")
 set(QT_MIN_VERSION "5.15.0")
 
 ################# Disallow in-source build #################
