@@ -7,6 +7,8 @@
 #include "imageplugin.h"
 #include <QQmlContext>
 
+#include <KFileItem>
+
 #include "imagebackend.h"
 #include "provider/packageimageprovider.h"
 #include "provider/xmlimageprovider.h"
@@ -25,6 +27,8 @@ void ImagePlugin::initializeEngine(QQmlEngine *engine, const char *uri)
 void ImagePlugin::registerTypes(const char *uri)
 {
     Q_ASSERT(uri == pluginName);
+
+    qRegisterMetaType<KFileItem>(); // For image preview
 
     qmlRegisterType<ImageBackend>(uri, 2, 0, "ImageBackend");
     qmlRegisterAnonymousType<QAbstractItemModel>("QAbstractItemModel", 1);
