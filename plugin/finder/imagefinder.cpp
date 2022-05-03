@@ -63,7 +63,7 @@ void ImageFinder::run()
             } else {
                 const QString name = wp.fileName();
 
-                if (name.startsWith('.')) {
+                if (name.startsWith(QLatin1Char('.'))) {
                     continue;
                 }
 

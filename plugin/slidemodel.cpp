@@ -125,7 +125,7 @@ void SlideModel::setSlidePaths(const QStringList &slidePaths)
             removeSourceModel(k);
         } else {
             // Abort loading
-            disconnect(k, 0, this, 0);
+            disconnect(k, nullptr, this, nullptr);
         }
         k->deleteLater();
     }
@@ -153,7 +153,7 @@ void SlideModel::slotSourceModelLoadingChanged()
         return;
     }
 
-    disconnect(m, &ImageProxyModel::loadingChanged, this, 0);
+    disconnect(m, &ImageProxyModel::loadingChanged, this, nullptr);
 
     connect(this, &SlideModel::targetSizeChanged, m, &ImageProxyModel::targetSizeChanged);
 

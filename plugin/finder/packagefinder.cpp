@@ -90,7 +90,7 @@ void PackageFinder::run()
         for (const QFileInfo &wp : files) {
             const QString folderPath = findSymlinkTarget(wp);
 
-            if (wp.fileName().startsWith('.')) {
+            if (wp.fileName().startsWith(QLatin1Char('.'))) {
                 continue;
             }
 

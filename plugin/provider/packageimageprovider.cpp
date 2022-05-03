@@ -94,7 +94,7 @@ AsyncPackageImageResponse::AsyncPackageImageResponse(const QString &path, const 
 void AsyncPackageImageResponse::slotHandleDone(const QImage &image)
 {
     m_image = image;
-    emit finished();
+    Q_EMIT finished();
 }
 
 QQuickTextureFactory *AsyncPackageImageResponse::textureFactory() const

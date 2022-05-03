@@ -24,7 +24,7 @@ float distance(const QSize &size, const QSize &desired)
 
 QSize resSize(const QString &str)
 {
-    const int index = str.indexOf('x');
+    const int index = str.indexOf(QLatin1Char('x'));
 
     if (index != -1) {
         return QSize(QStringView(str).left(index).toInt(), QStringView(str).mid(index + 1).toInt());

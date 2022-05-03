@@ -62,7 +62,7 @@ void XmlFinder::run()
             } else {
                 const QString name = wp.fileName();
 
-                if (name.startsWith('.')) {
+                if (name.startsWith(QLatin1Char('.'))) {
                     continue;
                 }
 
@@ -273,7 +273,7 @@ SlideshowData XmlFinder::parseSlideshowXml(const QString &path, const QSize &tar
                             if (xml.name() == QStringLiteral("duration")) {
                                 sdata.duration = xml.readElementText().toDouble();
                             } else if (xml.name() == QStringLiteral("file")) {
-                                const QStringList results = xml.readElementText(QXmlStreamReader::IncludeChildElements).simplified().split(' ');
+                                const QStringList results = xml.readElementText(QXmlStreamReader::IncludeChildElements).simplified().split(QLatin1Char(' '));
 
                                 if (results.size() == 1) {
                                     sdata.file = results.at(0);
