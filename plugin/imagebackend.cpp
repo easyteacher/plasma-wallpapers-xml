@@ -471,7 +471,7 @@ void ImageBackend::startSlideshow()
 
 void ImageBackend::backgroundsFound()
 {
-    disconnect(m_slideshowModel, &SlideModel::done, this, 0);
+    disconnect(m_slideshowModel, &SlideModel::done, this, nullptr);
 
     // setSourceModel must be called after the model is loaded
     m_slideFilterModel->setSourceModel(m_slideshowModel);
@@ -506,12 +506,14 @@ void ImageBackend::showFileDialog()
 
         QMimeDatabase db;
         QStringList imageGlobPatterns;
-        foreach (const QByteArray &mimeType, QImageReader::supportedMimeTypes()) {
-            QMimeType mime(db.mimeTypeForName(mimeType));
+        const auto supportedMimeTypes = QImageReader::supportedMimeTypes();
+
+        for (const QByteArray &mimeType : supportedMimeTypes) {
+            QMimeType mime(db.mimeTypeForName(QString::fromLatin1(mimeType)));
             imageGlobPatterns << mime.globPatterns();
         }
 
-        m_dialog = new QFileDialog(nullptr, i18n("Open Image"), path, i18n("Image Files") + " (" + imageGlobPatterns.join(' ') + ')');
+        m_dialog = new QFileDialog(nullptr, i18n("Open Image"), path, i18n("Image Files") + QStringLiteral(" (") + imageGlobPatterns.join(QLatin1Char(' ')) + QLatin1Char(')'));
         // i18n people, this isn't a "word puzzle". there is a specific string format for QFileDialog::setNameFilters
 
         m_dialog->setFileMode(QFileDialog::ExistingFiles);

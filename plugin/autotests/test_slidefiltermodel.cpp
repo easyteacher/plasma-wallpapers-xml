@@ -49,23 +49,23 @@ void SlideFilterModelTest::initTestCase()
     m_standardPath = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QStringLiteral("/wallpapers/");
     QDir imageDir(m_standardPath);
 
-    QVERIFY(imageDir.mkpath(m_standardPath + "a/"));
-    QVERIFY(imageDir.mkpath(m_standardPath + "d/"));
+    QVERIFY(imageDir.mkpath(m_standardPath + QStringLiteral("a/")));
+    QVERIFY(imageDir.mkpath(m_standardPath + QStringLiteral("d/")));
 
     QFile imageFile(m_wallpaperPath);
 
-    m_pathB = imageDir.absoluteFilePath("d/b.jpg");
+    m_pathB = imageDir.absoluteFilePath(QStringLiteral("d/b.jpg"));
     QVERIFY(imageFile.copy(m_pathB));
 
     // Explicitly wait 1s
     QThread::sleep(1);
 
-    m_pathA = imageDir.absoluteFilePath("d/a.jpg");
+    m_pathA = imageDir.absoluteFilePath(QStringLiteral("d/a.jpg"));
     QVERIFY(imageFile.copy(m_pathA));
 
     QThread::sleep(1);
 
-    m_pathC = imageDir.absoluteFilePath("a/c.jpg");
+    m_pathC = imageDir.absoluteFilePath(QStringLiteral("a/c.jpg"));
     QVERIFY(imageFile.copy(m_pathC));
 }
 

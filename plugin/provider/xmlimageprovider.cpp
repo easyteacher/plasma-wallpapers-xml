@@ -168,7 +168,7 @@ AsyncXmlImageResponse::AsyncXmlImageResponse(const QString &path, const QSize &r
 void AsyncXmlImageResponse::slotHandleDone(const QImage &image)
 {
     m_image = image;
-    emit finished();
+    Q_EMIT finished();
 }
 
 QQuickTextureFactory *AsyncXmlImageResponse::textureFactory() const

@@ -26,7 +26,7 @@ QStringList suffixes()
         const auto supportedMimeTypes = QImageReader::supportedMimeTypes();
 
         for (const QByteArray &mimeType : supportedMimeTypes) {
-            QMimeType mime(db.mimeTypeForName(mimeType));
+            QMimeType mime(db.mimeTypeForName(QString::fromLatin1(mimeType)));
             const QStringList globPatterns = mime.globPatterns();
 
             for (const QString &pattern : globPatterns) {

@@ -51,12 +51,12 @@ void XmlFinderTest::testXmlFinderCanFindImages()
     QCOMPARE(paths.size(), 2);
 
     QTRY_COMPARE(paths.at(0).name, QStringLiteral("Default Background (For test purpose, don't translate!)"));
-    QTRY_COMPARE(paths.at(0).filename, m_dataDir.absoluteFilePath("xml/.light.png"));
-    QTRY_COMPARE(paths.at(0).filename_dark, m_dataDir.absoluteFilePath("xml/.dark.png"));
+    QTRY_COMPARE(paths.at(0).filename, m_dataDir.absoluteFilePath(QStringLiteral("xml/.light.png")));
+    QTRY_COMPARE(paths.at(0).filename_dark, m_dataDir.absoluteFilePath(QStringLiteral("xml/.dark.png")));
     QTRY_COMPARE(paths.at(0).author, QStringLiteral("KDE Contributor"));
 
     QTRY_COMPARE(paths.at(1).name, QStringLiteral("Time of Day (For test purpose, don't translate!)"));
-    QTRY_COMPARE(paths.at(1).filename, m_dataDir.absoluteFilePath("xml/timeofday.xml"));
+    QTRY_COMPARE(paths.at(1).filename, m_dataDir.absoluteFilePath(QStringLiteral("xml/timeofday.xml")));
     QTRY_COMPARE(paths.at(1).slideshow.starttime.date(), QDate(2022, 5, 24));
     QTRY_COMPARE(paths.at(1).slideshow.starttime.time(), QTime(8, 0, 0));
     QCOMPARE(paths.at(1).slideshow.data.size(), 4);
@@ -64,24 +64,24 @@ void XmlFinderTest::testXmlFinderCanFindImages()
     const auto &static1 = paths.at(1).slideshow.data.at(0);
     QTRY_COMPARE(static1.dataType, 0);
     QTRY_COMPARE(static1.duration, 36000);
-    QTRY_COMPARE(static1.file, m_dataDir.absoluteFilePath("xml/.light.png"));
+    QTRY_COMPARE(static1.file, m_dataDir.absoluteFilePath(QStringLiteral("xml/.light.png")));
 
     const auto &dynamic1 = paths.at(1).slideshow.data.at(1);
     QTRY_COMPARE(dynamic1.dataType, 1);
     QTRY_COMPARE(dynamic1.duration, 7200);
-    QTRY_COMPARE(dynamic1.from, m_dataDir.absoluteFilePath("xml/.light.png"));
-    QTRY_COMPARE(dynamic1.to, m_dataDir.absoluteFilePath("xml/.dark.png"));
+    QTRY_COMPARE(dynamic1.from, m_dataDir.absoluteFilePath(QStringLiteral("xml/.light.png")));
+    QTRY_COMPARE(dynamic1.to, m_dataDir.absoluteFilePath(QStringLiteral("xml/.dark.png")));
 
     const auto &static2 = paths.at(1).slideshow.data.at(2);
     QTRY_COMPARE(static2.dataType, 0);
     QTRY_COMPARE(static2.duration, 36000);
-    QTRY_COMPARE(static2.file, m_dataDir.absoluteFilePath("xml/.dark.png"));
+    QTRY_COMPARE(static2.file, m_dataDir.absoluteFilePath(QStringLiteral("xml/.dark.png")));
 
     const auto &dynamic2 = paths.at(1).slideshow.data.at(3);
     QTRY_COMPARE(dynamic2.dataType, 1);
     QTRY_COMPARE(dynamic2.duration, 7200);
-    QTRY_COMPARE(dynamic2.from, m_dataDir.absoluteFilePath("xml/.dark.png"));
-    QTRY_COMPARE(dynamic2.to, m_dataDir.absoluteFilePath("xml/.light.png"));
+    QTRY_COMPARE(dynamic2.from, m_dataDir.absoluteFilePath(QStringLiteral("xml/.dark.png")));
+    QTRY_COMPARE(dynamic2.to, m_dataDir.absoluteFilePath(QStringLiteral("xml/.light.png")));
 }
 
 void XmlFinderTest::testXmlFinderFindPreferredImage()
