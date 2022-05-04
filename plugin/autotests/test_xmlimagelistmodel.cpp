@@ -8,6 +8,7 @@
 
 #include <KIO/PreviewJob>
 
+#include "../finder/xmlfinder.h"
 #include "../model/xmlimagelistmodel.h"
 
 class XmlImageListModelTest : public QObject
@@ -41,6 +42,8 @@ private:
 
 void XmlImageListModelTest::initTestCase()
 {
+    qRegisterMetaType<QList<WallpaperItem>>();
+
     m_dataDir = QDir(QFINDTESTDATA("testdata/default"));
     m_alternateDir = QDir(QFINDTESTDATA("testdata/alternate"));
     QVERIFY(!m_dataDir.isEmpty());

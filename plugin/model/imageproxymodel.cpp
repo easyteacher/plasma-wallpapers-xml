@@ -316,7 +316,7 @@ void ImageProxyModel::slotHandleLoaded(AbstractImageListModel *model)
 
         connect(this, &ImageProxyModel::targetSizeChanged, m_imageModel, &AbstractImageListModel::slotTargetSizeChanged);
         connect(this, &ImageProxyModel::targetSizeChanged, m_packageModel, &AbstractImageListModel::slotTargetSizeChanged);
-        connect(this, &ImageProxyModel::targetSizeChanged, m_imageModel, &AbstractImageListModel::slotTargetSizeChanged);
+        connect(this, &ImageProxyModel::targetSizeChanged, m_xmlModel, &AbstractImageListModel::slotTargetSizeChanged);
 
         Q_EMIT loadingChanged();
     }

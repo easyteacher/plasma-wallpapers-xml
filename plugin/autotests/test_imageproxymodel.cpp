@@ -9,6 +9,7 @@
 
 #include <KIO/CopyJob>
 
+#include "../finder/xmlfinder.h"
 #include "../model/imagelistmodel.h"
 #include "../model/imageproxymodel.h"
 #include "../model/packagelistmodel.h"
@@ -49,6 +50,8 @@ private:
 
 void ImageProxyModelTest::initTestCase()
 {
+    qRegisterMetaType<QList<WallpaperItem>>();
+
     m_dataDir = QDir(QFINDTESTDATA("testdata/default"));
     m_alternateDir = QDir(QFINDTESTDATA("testdata/alternate"));
     QVERIFY(!m_dataDir.isEmpty());
@@ -297,6 +300,8 @@ void ImageProxyModelTest::testImageProxyModelDirWatch()
     QCOMPARE(m_model->m_packageModel->count(), 1);
     QCOMPARE(m_model->m_xmlModel->count(), 0);
     QVERIFY(m_model->m_dirWatch.contains(standardPath + QStringLiteral("dummy")));
+
+    QThread::sleep(1);
 
     // Copy an xml file to the folder
     auto job2 = KIO::copy(QUrl::fromLocalFile(m_alternateDir.absoluteFilePath(QStringLiteral("xml") + QDir::separator())),

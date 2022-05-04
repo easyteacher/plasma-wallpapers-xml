@@ -107,7 +107,8 @@ void PackageListModelTest::testPackageListModelData()
     QCOMPARE(idx.data(ImageRoles::ResolutionRole).toString(), QStringLiteral("1920x1080"));
 
     QCOMPARE(idx.data(ImageRoles::PathRole).toUrl().toLocalFile(),
-             m_packagePath + QDir::separator() + QStringLiteral("contents") + QDir::separator() + QStringLiteral("images") + QDir::separator() + QStringLiteral("1920x1080.jpg"));
+             m_packagePath + QDir::separator() + QStringLiteral("contents") + QDir::separator() + QStringLiteral("images") + QDir::separator()
+                 + QStringLiteral("1920x1080.jpg"));
     QCOMPARE(idx.data(ImageRoles::PackageNameRole).toString(), m_packagePath + QDir::separator());
 
     QCOMPARE(idx.data(ImageRoles::RemovableRole).toBool(), false);
