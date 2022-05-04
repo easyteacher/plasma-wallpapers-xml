@@ -121,7 +121,9 @@ QQC2.StackView {
             cache: false
             autoTransform: true
             z: -1
+            layer.enabled: true
 
+            QQC2.StackView.onActivated: mainImage.layer.enabled = false
             QQC2.StackView.onRemoved: destroy()
 
             Rectangle {
