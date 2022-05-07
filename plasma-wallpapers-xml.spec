@@ -6,7 +6,7 @@
 
 
 Name:           plasma-wallpapers-xml
-Version:        1.2.1
+Version:        1.3.0
 Release:        1%{?dist}
 Summary:        A wallpaper plugin for KDE Plasma
 License:        GPLv2+
@@ -28,7 +28,7 @@ BuildRequires:  cmake(Qt5Quick) >= 5.15.0
 Suggests:       gnome-backgrounds
 
 %description
-A image wallpaper plugin for KDE Plasma that supports GNOME XML wallpaper format.
+An image/slideshow wallpaper plugin for KDE Plasma that supports GNOME XML wallpaper format.
 
 %prep
 %autosetup -n plasma-wallpapers-xml-main
